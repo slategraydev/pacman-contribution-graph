@@ -98,10 +98,79 @@ const stopGame = async (store: StoreType) => {
 };
 
 const startGame = async (store: StoreType) => {
-	// Randomize personality for every game generation (SVG or Canvas)
-	const styles = [PlayerStyle.CONSERVATIVE, PlayerStyle.AGGRESSIVE, PlayerStyle.OPPORTUNISTIC];
-	store.config.playerStyle = styles[Math.floor(Math.random() * styles.length)];
+	// Initialize brain if missing
+	if (!store.config.brain) {
+		store.config.brain = {
+			generation: 1,
+			dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100 },
+			lastFitness: 0
+		};
+	}
 
+	const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
+
+	// --- THE DAILY TOURNAMENT (Evolutionary Step) ---
+	if (store.config.outputFormat === 'svg' && remainingCells()) {
+		const originalDNA = { ...store.config.brain.dna };
+
+		// Define Mutations
+		const competitors = [
+			{ name: 'Baseline', dna: { ...originalDNA } },
+			{
+				name: 'Aggressive',
+				dna: {
+					...originalDNA,
+					pointWeight: originalDNA.pointWeight * 1.2,
+					safetyWeight: originalDNA.safetyWeight * 0.8,
+					dangerRadius: Math.max(3, originalDNA.dangerRadius - 1)
+				}
+			},
+			{
+				name: 'Conservative',
+				dna: {
+					...originalDNA,
+					safetyWeight: originalDNA.safetyWeight * 1.2,
+					pointWeight: originalDNA.pointWeight * 0.8,
+					dangerRadius: Math.min(10, originalDNA.dangerRadius + 1)
+				}
+			}
+		];
+
+		let bestFitness = -1;
+		let winnerDNA = originalDNA;
+
+		for (const competitor of competitors) {
+			// Deep clone store for sandbox run
+			const sandboxStore: StoreType = JSON.parse(JSON.stringify(store));
+			sandboxStore.config.brain = { ...store.config.brain, dna: competitor.dna };
+			sandboxStore.grid = store.grid.map((row) => row.map((cell) => ({ ...cell })));
+
+			placePacman(sandboxStore);
+			placeGhosts(sandboxStore);
+
+			// Run Headless Simulation
+			const MAX_FRAMES = 5000;
+			while (!sandboxStore.gameEnded && sandboxStore.frameCount < MAX_FRAMES) {
+				await updateGame(sandboxStore, false, true); // true = headless
+			}
+
+			// Calculate Fitness: (Total Dots Eaten / Total Frames) * 1000
+			const dotsEaten = sandboxStore.pacman.totalPoints;
+			const fitness = (dotsEaten / (sandboxStore.frameCount || 1)) * 1000;
+
+			if (fitness > bestFitness) {
+				bestFitness = fitness;
+				winnerDNA = competitor.dna;
+			}
+		}
+
+		// Update Brain with the winner
+		store.config.brain.dna = winnerDNA;
+		store.config.brain.generation++;
+		store.config.brain.lastFitness = bestFitness;
+	}
+
+	// --- FINAL RENDERING RUN ---
 	if (store.config.outputFormat == 'canvas') {
 		store.config.canvas = store.config.canvas;
 		Canvas.resizeCanvas(store);
@@ -113,8 +182,6 @@ const startGame = async (store: StoreType) => {
 	store.ghosts.forEach((g) => (g.scared = false));
 
 	store.grid = Utils.createGridFromData(store);
-
-	const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
 
 	if (remainingCells()) {
 		placePacman(store);
@@ -175,7 +242,7 @@ export const determineGhostName = (index: number): GhostName => {
 
 /* ---------- update per frame ---------- */
 
-export const updateGame = async (store: StoreType, forceFinish = false) => {
+export const updateGame = async (store: StoreType, forceFinish = false, headless = false) => {
 	/* -------- pacman timers (DEATH PAUSE) -------- */
 	if (store.pacman.deadRemainingDuration > 0) {
 		store.pacman.deadRemainingDuration--;
@@ -188,6 +255,9 @@ export const updateGame = async (store: StoreType, forceFinish = false) => {
 			} else {
 				// GAME OVER - Generate SVG and end game
 				store.gameEnded = true;
+
+				if (headless) return;
+
 				if (store.config.outputFormat === 'svg') {
 					const svg = SVG.generateAnimatedSVG(store);
 					store.config.svgCallback(svg);
@@ -202,6 +272,8 @@ export const updateGame = async (store: StoreType, forceFinish = false) => {
 				return;
 			}
 		}
+
+		if (headless) return;
 
 		// Snapshot and render the current (dead or reset) state, then pause logic
 		pushSnapshot(store, false);
@@ -219,7 +291,7 @@ export const updateGame = async (store: StoreType, forceFinish = false) => {
 	store.frameCount++;
 
 	/* ---- FRAME-SKIP restored ---- */
-	if (!forceFinish && store.frameCount % store.config.gameSpeed !== 0) {
+	if (!headless && !forceFinish && store.frameCount % store.config.gameSpeed !== 0) {
 		pushSnapshot(store, false);
 		return;
 	}
@@ -262,6 +334,9 @@ export const updateGame = async (store: StoreType, forceFinish = false) => {
 	const remaining = store.grid.some((row) => row.some((c) => c.commitsCount > 0));
 	if (!remaining || forceFinish) {
 		store.gameEnded = true;
+
+		if (headless) return;
+
 		if (store.config.outputFormat === 'svg') {
 			const svg = SVG.generateAnimatedSVG(store);
 			store.config.svgCallback(svg);
@@ -305,6 +380,8 @@ export const updateGame = async (store: StoreType, forceFinish = false) => {
 	}
 
 	store.pacmanMouthOpen = !store.pacmanMouthOpen;
+
+	if (headless) return;
 
 	/* ---- single snapshot per frame ---- */
 	// Snapshot grid INSTANTLY if a point was eaten, otherwise every 10 frames to save memory

@@ -139,25 +139,16 @@ const calculateOptimalPath = (store: StoreType, target: Point2d) => {
 
 	const maxDangerValue = 25; // Increased to match new danger radius
 
-	// Set weights according to player style - more extreme values
-	let safetyWeight = 1.0;
-	let pointWeight = 0.5;
+	// Set weights according to brain DNA (or defaults)
+	const dna = store.config.brain?.dna || {
+		safetyWeight: 1.5,
+		pointWeight: 0.8,
+		dangerRadius: 7,
+		revisitPenalty: 100
+	};
 
-	switch (store.config.playerStyle) {
-		case PlayerStyle.CONSERVATIVE:
-			safetyWeight = 5.0;
-			pointWeight = 0.1;
-			break;
-		case PlayerStyle.AGGRESSIVE:
-			safetyWeight = 0.5;
-			pointWeight = 2.0;
-			break;
-		case PlayerStyle.OPPORTUNISTIC:
-		default:
-			safetyWeight = 1.5; // Slightly higher to ensure he flees effectively
-			pointWeight = 0.8;
-			break;
-	}
+	const safetyWeight = dna.safetyWeight;
+	const pointWeight = dna.pointWeight;
 
 	while (queue.length > 0) {
 		queue.sort((a, b) => b.score - a.score);
@@ -184,7 +175,7 @@ const calculateOptimalPath = (store: StoreType, target: Point2d) => {
 				const h = Math.abs(newX - target.x) + Math.abs(newY - target.y);
 				const distanceToTarget = h;
 
-				const revisitPenalty = store.pacman.recentPositions?.includes(key) ? 100 : 0;
+				const revisitPenalty = store.pacman.recentPositions?.includes(key) ? dna.revisitPenalty : 0;
 
 				// Danger is a subtraction from score. High danger = low priority
 				const safetyScore = (maxDangerValue - danger) * safetyWeight;
@@ -211,12 +202,11 @@ const calculateOptimalPath = (store: StoreType, target: Point2d) => {
 const createDangerMap = (store: StoreType) => {
 	const map = new Map<string, number>();
 	const hasPowerup = !!store.pacman.powerupRemainingDuration;
+	const radius = store.config.brain?.dna.dangerRadius || 7;
 
 	store.ghosts.forEach((ghost) => {
 		if (ghost.scared || ghost.name === 'eyes') return;
 
-		// Increased radius (7) to make him flee sooner
-		const radius = 7;
 		for (let dx = -radius; dx <= radius; dx++) {
 			for (let dy = -radius; dy <= radius; dy++) {
 				const x = ghost.x + dx;
@@ -226,7 +216,7 @@ const createDangerMap = (store: StoreType) => {
 					const key = `${x},${y}`;
 					const distance = Math.abs(dx) + Math.abs(dy);
 					// Higher danger value (25 max) for close proximity
-					const value = 25 - distance;
+					const value = radius * 3 + 4 - distance; // Dynamic max value
 
 					if (value > 0) {
 						const current = map.get(key) || 0;

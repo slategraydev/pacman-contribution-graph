@@ -77,6 +77,19 @@ export interface StoreType {
 	gameEnded: boolean;
 }
 
+export interface DNA {
+	safetyWeight: number;
+	pointWeight: number;
+	dangerRadius: number;
+	revisitPenalty: number;
+}
+
+export interface Brain {
+	generation: number;
+	dna: DNA;
+	lastFitness: number;
+}
+
 /* ───────────────────────── Settings ───────────────────────────── */
 export interface Config {
 	platform: 'github' | 'gitlab';
@@ -94,7 +107,7 @@ export interface Config {
 	};
 	maxFrames?: number; // Maximum frame rate for the game
 	maxHistorySize?: number;
-	playerStyle: PlayerStyle;
+	brain?: Brain;
 }
 
 /* ───────────────────────── Themes ──────────────────────────────────── */

@@ -27303,14 +27303,6 @@ const GhostsMovement = {
     resetMovement
 };
 
-;// CONCATENATED MODULE: ../src/types.ts
-var PlayerStyle;
-(function (PlayerStyle) {
-    PlayerStyle["CONSERVATIVE"] = "conservative";
-    PlayerStyle["AGGRESSIVE"] = "aggressive";
-    PlayerStyle["OPPORTUNISTIC"] = "opportunistic";
-})(PlayerStyle || (PlayerStyle = {}));
-
 ;// CONCATENATED MODULE: ../src/utils/utils.ts
 
 /* ─────────────────────────── Helpers ─────────────────────────── */
@@ -27428,7 +27420,6 @@ const Utils = {
 
 
 
-
 const RECENT_POSITIONS_LIMIT = 5;
 const movePacman = (store) => {
     if (store.pacman.deadRemainingDuration)
@@ -27537,24 +27528,15 @@ const calculateOptimalPath = (store, target) => {
     const visited = new Set([`${store.pacman.x},${store.pacman.y}`]);
     const dangerMap = createDangerMap(store);
     const maxDangerValue = 25; // Increased to match new danger radius
-    // Set weights according to player style - more extreme values
-    let safetyWeight = 1.0;
-    let pointWeight = 0.5;
-    switch (store.config.playerStyle) {
-        case PlayerStyle.CONSERVATIVE:
-            safetyWeight = 5.0;
-            pointWeight = 0.1;
-            break;
-        case PlayerStyle.AGGRESSIVE:
-            safetyWeight = 0.5;
-            pointWeight = 2.0;
-            break;
-        case PlayerStyle.OPPORTUNISTIC:
-        default:
-            safetyWeight = 1.5; // Slightly higher to ensure he flees effectively
-            pointWeight = 0.8;
-            break;
-    }
+    // Set weights according to brain DNA (or defaults)
+    const dna = store.config.brain?.dna || {
+        safetyWeight: 1.5,
+        pointWeight: 0.8,
+        dangerRadius: 7,
+        revisitPenalty: 100
+    };
+    const safetyWeight = dna.safetyWeight;
+    const pointWeight = dna.pointWeight;
     while (queue.length > 0) {
         queue.sort((a, b) => b.score - a.score);
         const current = queue.shift();
@@ -27576,7 +27558,7 @@ const calculateOptimalPath = (store, target) => {
                 // A* Heuristic
                 const h = Math.abs(newX - target.x) + Math.abs(newY - target.y);
                 const distanceToTarget = h;
-                const revisitPenalty = store.pacman.recentPositions?.includes(key) ? 100 : 0;
+                const revisitPenalty = store.pacman.recentPositions?.includes(key) ? dna.revisitPenalty : 0;
                 // Danger is a subtraction from score. High danger = low priority
                 const safetyScore = (maxDangerValue - danger) * safetyWeight;
                 const pointScore = (isPowerup ? pointValue * 10 : pointValue) * pointWeight;
@@ -27597,11 +27579,10 @@ const calculateOptimalPath = (store, target) => {
 const createDangerMap = (store) => {
     const map = new Map();
     const hasPowerup = !!store.pacman.powerupRemainingDuration;
+    const radius = store.config.brain?.dna.dangerRadius || 7;
     store.ghosts.forEach((ghost) => {
         if (ghost.scared || ghost.name === 'eyes')
             return;
-        // Increased radius (7) to make him flee sooner
-        const radius = 7;
         for (let dx = -radius; dx <= radius; dx++) {
             for (let dy = -radius; dy <= radius; dy++) {
                 const x = ghost.x + dx;
@@ -27610,7 +27591,7 @@ const createDangerMap = (store) => {
                     const key = `${x},${y}`;
                     const distance = Math.abs(dx) + Math.abs(dy);
                     // Higher danger value (25 max) for close proximity
-                    const value = 25 - distance;
+                    const value = radius * 3 + 4 - distance; // Dynamic max value
                     if (value > 0) {
                         const current = map.get(key) || 0;
                         map.set(key, Math.max(current, value));
@@ -28010,7 +27991,8 @@ const SVG_KEY_TIMES_PRECISION = 4;
 const generateAnimatedSVG = (store) => {
     // Dimensions and duration
     const svgWidth = GRID_WIDTH * (CELL_SIZE + GAP_SIZE);
-    const svgHeight = GRID_HEIGHT * (CELL_SIZE + GAP_SIZE) + 30; // Extra height for time counter
+    const footerHeight = 45;
+    const svgHeight = GRID_HEIGHT * (CELL_SIZE + GAP_SIZE) + 15 + footerHeight;
     const totalDurationMs = store.gameHistory.length * DELTA_TIME;
     // Basic SVG structure
     let svg = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
@@ -28174,6 +28156,21 @@ const generateAnimatedSVG = (store) => {
         // Close the ghost group
         svg += `</g>`;
     });
+    // --- BRAIN STATUS FOOTER ---
+    if (store.config.brain) {
+        const brain = store.config.brain;
+        const footerY = svgHeight - 25;
+        const textColor = Utils.getCurrentTheme(store).textColor;
+        const dna = brain.dna;
+        svg += `<g id="brain-stats" font-family="monospace" font-size="10" fill="${textColor}">`;
+        svg += `<text x="10" y="${footerY}">GEN: ${brain.generation}</text>`;
+        svg += `<text x="70" y="${footerY}">SAFETY: ${dna.safetyWeight.toFixed(2)}</text>`;
+        svg += `<text x="150" y="${footerY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
+        svg += `<text x="230" y="${footerY}">RAD: ${dna.dangerRadius}</text>`;
+        svg += `<text x="290" y="${footerY}">STUCK_PENALTY: ${dna.revisitPenalty}</text>`;
+        svg += `<text x="${svgWidth - 10}" y="${footerY}" text-anchor="end">FITNESS: ${brain.lastFitness.toFixed(0)}</text>`;
+        svg += `</g>`;
+    }
     svg += '</svg>';
     return svg;
 };
@@ -28418,7 +28415,6 @@ const SVG = {
 
 
 
-
 /* ---------- positioning helpers ---------- */
 const placePacman = (store) => {
     store.pacman = {
@@ -28506,9 +28502,68 @@ const stopGame = async (store) => {
     clearInterval(store.gameInterval);
 };
 const startGame = async (store) => {
-    // Randomize personality for every game generation (SVG or Canvas)
-    const styles = [PlayerStyle.CONSERVATIVE, PlayerStyle.AGGRESSIVE, PlayerStyle.OPPORTUNISTIC];
-    store.config.playerStyle = styles[Math.floor(Math.random() * styles.length)];
+    // Initialize brain if missing
+    if (!store.config.brain) {
+        store.config.brain = {
+            generation: 1,
+            dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100 },
+            lastFitness: 0
+        };
+    }
+    const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
+    // --- THE DAILY TOURNAMENT (Evolutionary Step) ---
+    if (store.config.outputFormat === 'svg' && remainingCells()) {
+        const originalDNA = { ...store.config.brain.dna };
+        // Define Mutations
+        const competitors = [
+            { name: 'Baseline', dna: { ...originalDNA } },
+            {
+                name: 'Aggressive',
+                dna: {
+                    ...originalDNA,
+                    pointWeight: originalDNA.pointWeight * 1.2,
+                    safetyWeight: originalDNA.safetyWeight * 0.8,
+                    dangerRadius: Math.max(3, originalDNA.dangerRadius - 1)
+                }
+            },
+            {
+                name: 'Conservative',
+                dna: {
+                    ...originalDNA,
+                    safetyWeight: originalDNA.safetyWeight * 1.2,
+                    pointWeight: originalDNA.pointWeight * 0.8,
+                    dangerRadius: Math.min(10, originalDNA.dangerRadius + 1)
+                }
+            }
+        ];
+        let bestFitness = -1;
+        let winnerDNA = originalDNA;
+        for (const competitor of competitors) {
+            // Deep clone store for sandbox run
+            const sandboxStore = JSON.parse(JSON.stringify(store));
+            sandboxStore.config.brain = { ...store.config.brain, dna: competitor.dna };
+            sandboxStore.grid = store.grid.map((row) => row.map((cell) => ({ ...cell })));
+            placePacman(sandboxStore);
+            placeGhosts(sandboxStore);
+            // Run Headless Simulation
+            const MAX_FRAMES = 5000;
+            while (!sandboxStore.gameEnded && sandboxStore.frameCount < MAX_FRAMES) {
+                await updateGame(sandboxStore, false, true); // true = headless
+            }
+            // Calculate Fitness: (Total Dots Eaten / Total Frames) * 1000
+            const dotsEaten = sandboxStore.pacman.totalPoints;
+            const fitness = (dotsEaten / (sandboxStore.frameCount || 1)) * 1000;
+            if (fitness > bestFitness) {
+                bestFitness = fitness;
+                winnerDNA = competitor.dna;
+            }
+        }
+        // Update Brain with the winner
+        store.config.brain.dna = winnerDNA;
+        store.config.brain.generation++;
+        store.config.brain.lastFitness = bestFitness;
+    }
+    // --- FINAL RENDERING RUN ---
     if (store.config.outputFormat == 'canvas') {
         store.config.canvas = store.config.canvas;
         Canvas.resizeCanvas(store);
@@ -28518,7 +28573,6 @@ const startGame = async (store) => {
     store.gameHistory = []; // keeps clean
     store.ghosts.forEach((g) => (g.scared = false));
     store.grid = Utils.createGridFromData(store);
-    const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
     if (remainingCells()) {
         placePacman(store);
         placeGhosts(store);
@@ -28572,7 +28626,7 @@ const determineGhostName = (index) => {
     return names[index % names.length];
 };
 /* ---------- update per frame ---------- */
-const updateGame = async (store, forceFinish = false) => {
+const updateGame = async (store, forceFinish = false, headless = false) => {
     /* -------- pacman timers (DEATH PAUSE) -------- */
     if (store.pacman.deadRemainingDuration > 0) {
         store.pacman.deadRemainingDuration--;
@@ -28585,6 +28639,8 @@ const updateGame = async (store, forceFinish = false) => {
             else {
                 // GAME OVER - Generate SVG and end game
                 store.gameEnded = true;
+                if (headless)
+                    return;
                 if (store.config.outputFormat === 'svg') {
                     const svg = SVG.generateAnimatedSVG(store);
                     store.config.svgCallback(svg);
@@ -28599,6 +28655,8 @@ const updateGame = async (store, forceFinish = false) => {
                 return;
             }
         }
+        if (headless)
+            return;
         // Snapshot and render the current (dead or reset) state, then pause logic
         pushSnapshot(store, false);
         if (store.config.outputFormat == 'canvas') {
@@ -28613,7 +28671,7 @@ const updateGame = async (store, forceFinish = false) => {
         return;
     store.frameCount++;
     /* ---- FRAME-SKIP restored ---- */
-    if (!forceFinish && store.frameCount % store.config.gameSpeed !== 0) {
+    if (!headless && !forceFinish && store.frameCount % store.config.gameSpeed !== 0) {
         pushSnapshot(store, false);
         return;
     }
@@ -28653,6 +28711,8 @@ const updateGame = async (store, forceFinish = false) => {
     const remaining = store.grid.some((row) => row.some((c) => c.commitsCount > 0));
     if (!remaining || forceFinish) {
         store.gameEnded = true;
+        if (headless)
+            return;
         if (store.config.outputFormat === 'svg') {
             const svg = SVG.generateAnimatedSVG(store);
             store.config.svgCallback(svg);
@@ -28691,6 +28751,8 @@ const updateGame = async (store, forceFinish = false) => {
         checkCollisions(store);
     }
     store.pacmanMouthOpen = !store.pacmanMouthOpen;
+    if (headless)
+        return;
     /* ---- single snapshot per frame ---- */
     // Snapshot grid INSTANTLY if a point was eaten, otherwise every 10 frames to save memory
     const shouldSnapshotGrid = pointEaten || store.frameCount % 10 === 0;
@@ -28961,8 +29023,7 @@ const Grid = {
 
 
 
-
-class PacmanRenderer {
+class src_PacmanRenderer {
     store;
     conf;
     constructor(conf) {
@@ -28981,7 +29042,7 @@ class PacmanRenderer {
             enableSounds: false,
             pointsIncreasedCallback: (_) => { },
             githubSettings: { accessToken: '' },
-            playerStyle: PlayerStyle.OPPORTUNISTIC
+            brain: undefined
         };
         // Reset the store on each call to start()
         this.store = JSON.parse(JSON.stringify(Store));
@@ -29046,19 +29107,68 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 		let svgContent = '';
 		const userName = core.getInput('github_user_name');
 		const githubToken = core.getInput('github_token');
-		const playerStyle = core.getInput('player_style') || 'oportunista';
+
+		// --- BRAIN PERSISTENCE ---
+		const brainPath = 'pacman-brain.json';
+		let brain = undefined;
+		if (external_fs_.existsSync(brainPath)) {
+			try {
+				brain = JSON.parse(external_fs_.readFileSync(brainPath, 'utf8'));
+				console.log(`🧠 Brain loaded: Generation ${brain.generation}`);
+			} catch (e) {
+				console.warn('⚠️ Could not parse brain.json, starting fresh.');
+			}
+		}
+
 		// TODO: Check active users
 		fetch('https://elec.abozanona.me/github-action-analytics.php?username=' + userName);
 
-		svgContent = await generateSvg(userName, githubToken, 'github', playerStyle);
+		const generateWithBrain = async (theme) => {
+			return new Promise((resolve) => {
+				let generatedSvg = '';
+				let updatedBrain = undefined;
+
+				const conf = {
+					platform: 'github',
+					username: userName,
+					outputFormat: 'svg',
+					gameSpeed: 1,
+					gameTheme: theme,
+					brain: brain, // Pass the loaded brain
+					githubSettings: { accessToken: githubToken },
+					svgCallback: (svg) => (generatedSvg = svg),
+					gameOverCallback: () => resolve({ svg: generatedSvg, brain: updatedBrain })
+				};
+
+				const renderer = new src_PacmanRenderer(conf);
+				renderer.start().then((store) => {
+					updatedBrain = store.config.brain;
+				});
+			});
+		};
+
+		// Run for Light Theme
+		const lightResult = await generateWithBrain('github');
+		svgContent = lightResult.svg;
+		brain = lightResult.brain; // Update brain from the first run's evolution
+
 		console.log(`💾 writing to dist/pacman-contribution-graph.svg`);
 		external_fs_.mkdirSync(external_path_.dirname('dist/pacman-contribution-graph.svg'), { recursive: true });
 		external_fs_.writeFileSync('dist/pacman-contribution-graph.svg', svgContent);
 
-		svgContent = await generateSvg(userName, githubToken, 'github-dark', playerStyle);
+		// Run for Dark Theme (reuse evolved brain)
+		const darkResult = await generateWithBrain('github-dark');
+		svgContent = darkResult.svg;
+
 		console.log(`💾 writing to dist/pacman-contribution-graph-dark.svg`);
 		external_fs_.mkdirSync(external_path_.dirname('dist/pacman-contribution-graph-dark.svg'), { recursive: true });
 		external_fs_.writeFileSync('dist/pacman-contribution-graph-dark.svg', svgContent);
+
+		// --- SAVE UPDATED BRAIN ---
+		if (brain) {
+			external_fs_.writeFileSync(brainPath, JSON.stringify(brain, null, 2));
+			console.log(`🧠 Brain saved: Generation ${brain.generation}`);
+		}
 	} catch (e) {
 		core.setFailed(`Action failed with "${e.message}"`);
 	}

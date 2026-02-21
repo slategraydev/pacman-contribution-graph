@@ -8,7 +8,8 @@ const SVG_KEY_TIMES_PRECISION = 4;
 const generateAnimatedSVG = (store: StoreType) => {
 	// Dimensions and duration
 	const svgWidth = GRID_WIDTH * (CELL_SIZE + GAP_SIZE);
-	const svgHeight = GRID_HEIGHT * (CELL_SIZE + GAP_SIZE) + 30; // Extra height for time counter
+	const footerHeight = 45;
+	const svgHeight = GRID_HEIGHT * (CELL_SIZE + GAP_SIZE) + 15 + footerHeight;
 	const totalDurationMs = store.gameHistory.length * DELTA_TIME;
 
 	// Basic SVG structure
@@ -195,6 +196,23 @@ const generateAnimatedSVG = (store: StoreType) => {
 		// Close the ghost group
 		svg += `</g>`;
 	});
+
+	// --- BRAIN STATUS FOOTER ---
+	if (store.config.brain) {
+		const brain = store.config.brain;
+		const footerY = svgHeight - 25;
+		const textColor = Utils.getCurrentTheme(store).textColor;
+		const dna = brain.dna;
+
+		svg += `<g id="brain-stats" font-family="monospace" font-size="10" fill="${textColor}">`;
+		svg += `<text x="10" y="${footerY}">GEN: ${brain.generation}</text>`;
+		svg += `<text x="70" y="${footerY}">SAFETY: ${dna.safetyWeight.toFixed(2)}</text>`;
+		svg += `<text x="150" y="${footerY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
+		svg += `<text x="230" y="${footerY}">RAD: ${dna.dangerRadius}</text>`;
+		svg += `<text x="290" y="${footerY}">STUCK_PENALTY: ${dna.revisitPenalty}</text>`;
+		svg += `<text x="${svgWidth - 10}" y="${footerY}" text-anchor="end">FITNESS: ${brain.lastFitness.toFixed(0)}</text>`;
+		svg += `</g>`;
+	}
 
 	svg += '</svg>';
 	return svg;

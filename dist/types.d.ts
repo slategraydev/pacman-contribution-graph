@@ -66,6 +66,17 @@ export interface StoreType {
     useGithubThemeColor: boolean;
     gameEnded: boolean;
 }
+export interface DNA {
+    safetyWeight: number;
+    pointWeight: number;
+    dangerRadius: number;
+    revisitPenalty: number;
+}
+export interface Brain {
+    generation: number;
+    dna: DNA;
+    lastFitness: number;
+}
 export interface Config {
     platform: 'github' | 'gitlab';
     username: string;
@@ -82,7 +93,7 @@ export interface Config {
     };
     maxFrames?: number;
     maxHistorySize?: number;
-    playerStyle: PlayerStyle;
+    brain?: Brain;
 }
 export type ThemeKeys = 'github' | 'github-dark' | 'gitlab' | 'gitlab-dark';
 export interface GameTheme {
