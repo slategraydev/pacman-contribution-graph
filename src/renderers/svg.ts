@@ -8,8 +8,9 @@ const SVG_KEY_TIMES_PRECISION = 4;
 const generateAnimatedSVG = (store: StoreType) => {
 	// Dimensions and duration
 	const svgWidth = GRID_WIDTH * (CELL_SIZE + GAP_SIZE);
-	const footerHeight = 45;
-	const svgHeight = GRID_HEIGHT * (CELL_SIZE + GAP_SIZE) + 15 + footerHeight;
+	const topMargin = 15;
+	const bottomMargin = 25;
+	const svgHeight = GRID_HEIGHT * (CELL_SIZE + GAP_SIZE) + topMargin + bottomMargin;
 	const totalDurationMs = store.gameHistory.length * DELTA_TIME;
 
 	// Basic SVG structure
@@ -200,17 +201,17 @@ const generateAnimatedSVG = (store: StoreType) => {
 	// --- INTELLIGENCE STATUS FOOTER ---
 	if (store.config.intelligence) {
 		const intelligence = store.config.intelligence;
-		const footerY = svgHeight - 25;
-		const textColor = Utils.getCurrentTheme(store).textColor;
+		const theme = Utils.getCurrentTheme(store);
 		const dna = intelligence.dna;
+		const textColor = theme.textColor;
+		const textY = svgHeight - 10;
 
-		svg += `<g id="intelligence-stats" font-family="monospace" font-size="10" fill="${textColor}">`;
-		svg += `<text x="10" y="${footerY}">GEN: ${intelligence.generation}</text>`;
-		svg += `<text x="70" y="${footerY}">SAFETY: ${dna.safetyWeight.toFixed(2)}</text>`;
-		svg += `<text x="150" y="${footerY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
-		svg += `<text x="230" y="${footerY}">RAD: ${dna.dangerRadius}</text>`;
-		svg += `<text x="290" y="${footerY}">STUCK_PENALTY: ${dna.revisitPenalty}</text>`;
-		svg += `<text x="${svgWidth - 10}" y="${footerY}" text-anchor="end">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
+		svg += `<g id="intelligence-stats" font-size="10" fill="${textColor}">`;
+		svg += `<text x="10" y="${textY}">GEN: ${intelligence.generation}</text>`;
+		svg += `<text x="70" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
+		svg += `<text x="140" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
+		svg += `<text x="210" y="${textY}">RAD: ${dna.dangerRadius}</text>`;
+		svg += `<text x="${svgWidth - 10}" y="${textY}" text-anchor="end">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
 		svg += `</g>`;
 	}
 

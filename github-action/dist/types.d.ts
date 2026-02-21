@@ -72,7 +72,7 @@ export interface DNA {
     dangerRadius: number;
     revisitPenalty: number;
 }
-export interface Brain {
+export interface Intelligence {
     generation: number;
     dna: DNA;
     lastFitness: number;
@@ -93,7 +93,7 @@ export interface Config {
     };
     maxFrames?: number;
     maxHistorySize?: number;
-    brain?: Brain;
+    intelligence?: Intelligence;
 }
 export type ThemeKeys = 'github' | 'github-dark' | 'gitlab' | 'gitlab-dark';
 export interface GameTheme {
