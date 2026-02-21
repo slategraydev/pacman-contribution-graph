@@ -2,6 +2,7 @@ export type Point2d = {
     x: number;
     y: number;
     direction?: 'right' | 'left' | 'up' | 'down';
+    value?: number;
 };
 export type ContributionLevel = 'NONE' | 'FIRST_QUARTILE' | 'SECOND_QUARTILE' | 'THIRD_QUARTILE' | 'FOURTH_QUARTILE';
 export interface Contribution {

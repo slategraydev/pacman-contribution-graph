@@ -27078,7 +27078,8 @@ const moveGhosts = (store) => {
     for (const ghost of store.ghosts) {
         if (ghost.inHouse) {
             moveGhostInHouse(ghost, store);
-            continue;
+            if (ghost.inHouse)
+                continue;
         }
         let target;
         if (ghost.name === 'eyes') {
@@ -27228,7 +27229,9 @@ const moveGhostInHouse = (ghost, store) => {
             ghost.inHouse = true; // Stay in house to bob until released by timer
             ghost.respawning = false;
         }
-        return;
+        else {
+            return;
+        }
     }
     // Arcade Feature: 1-grid vertical bobbing (between y=3 and y=4)
     const topLimit = 3;
@@ -27422,18 +27425,22 @@ const movePacman = (store) => {
             const ghostPosition = findClosestScaredGhost(store);
             targetPosition = ghostPosition ?? findOptimalTarget(store);
         }
-        else if (store.pacman.target) {
-            if (store.pacman.x === store.pacman.target.x && store.pacman.y === store.pacman.target.y) {
-                targetPosition = findOptimalTarget(store);
+        else {
+            // Target Locking Logic: Only find a NEW target if:
+            // 1. Current target is missing
+            // 2. Current target was reached (eaten)
+            // 3. A significantly better target exists (Hysteresis)
+            const currentTarget = store.pacman.target;
+            const bestAvailable = findOptimalTarget(store);
+            if (!currentTarget ||
+                (store.pacman.x === currentTarget.x && store.pacman.y === currentTarget.y) ||
+                (bestAvailable && bestAvailable.value > (currentTarget.value || 0) * 2)) {
+                targetPosition = bestAvailable;
                 store.pacman.target = targetPosition;
             }
             else {
-                targetPosition = store.pacman.target;
+                targetPosition = currentTarget;
             }
-        }
-        else {
-            targetPosition = findOptimalTarget(store);
-            store.pacman.target = targetPosition;
         }
         // Safety check to ensure targetPosition is never undefined
         if (!targetPosition) {
@@ -27545,7 +27552,9 @@ const calculateOptimalPath = (store, target) => {
                 const newPath = [...path, { x: newX, y: newY }];
                 const danger = dangerMap.get(key) || 0;
                 const pointValue = store.grid[newX][newY].commitsCount;
-                const distanceToTarget = MovementUtils.calculateDistance(newX, newY, target.x, target.y);
+                // A* Heuristic: Manhattan distance to target
+                const h = Math.abs(newX - target.x) + Math.abs(newY - target.y);
+                const distanceToTarget = h;
                 const revisitPenalty = store.pacman.recentPositions?.includes(key) ? 100 : 0;
                 let safetyScore, pointScore, finalScore;
                 // Completely inverted punctuation logic for conservative style
@@ -28407,8 +28416,8 @@ const SVG = {
 /* ---------- positioning helpers ---------- */
 const placePacman = (store) => {
     store.pacman = {
-        x: 0,
-        y: 0,
+        x: 26,
+        y: 5,
         direction: 'right',
         points: 0,
         totalPoints: 0,
@@ -28440,7 +28449,7 @@ const placeGhosts = (store) => {
             target: undefined,
             inHouse: true,
             respawnCounter: 0,
-            freezeCounter: 10,
+            freezeCounter: 25,
             justReleasedFromHouse: false
         },
         {
@@ -28452,7 +28461,7 @@ const placeGhosts = (store) => {
             target: undefined,
             inHouse: true,
             respawnCounter: 0,
-            freezeCounter: 60,
+            freezeCounter: 75,
             justReleasedFromHouse: false
         },
         {
@@ -28464,7 +28473,7 @@ const placeGhosts = (store) => {
             target: undefined,
             inHouse: true,
             respawnCounter: 0,
-            freezeCounter: 120,
+            freezeCounter: 150,
             justReleasedFromHouse: false
         }
     ];
@@ -28530,8 +28539,8 @@ const startGame = async (store) => {
 };
 /* ---------- utilities ---------- */
 const resetPacman = (store) => {
-    store.pacman.x = 27;
-    store.pacman.y = 7;
+    store.pacman.x = 26;
+    store.pacman.y = 5;
     store.pacman.direction = 'right';
     store.pacman.recentPositions = [];
 };

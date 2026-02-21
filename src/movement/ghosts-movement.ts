@@ -24,7 +24,7 @@ const moveGhosts = (store: StoreType) => {
 	for (const ghost of store.ghosts) {
 		if (ghost.inHouse) {
 			moveGhostInHouse(ghost, store);
-			continue;
+			if (ghost.inHouse) continue;
 		}
 
 		let target: Point2d;
@@ -182,8 +182,9 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 			ghost.name = ghost.originalName;
 			ghost.inHouse = true; // Stay in house to bob until released by timer
 			ghost.respawning = false;
+		} else {
+			return;
 		}
-		return;
 	}
 
 	// Arcade Feature: 1-grid vertical bobbing (between y=3 and y=4)

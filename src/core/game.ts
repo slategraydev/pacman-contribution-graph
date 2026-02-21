@@ -11,8 +11,8 @@ import { DELTA_TIME, PACMAN_DEATH_DURATION } from './constants';
 
 const placePacman = (store: StoreType) => {
 	store.pacman = {
-		x: 0,
-		y: 0,
+		x: 26,
+		y: 5,
 		direction: 'right',
 		points: 0,
 		totalPoints: 0,
@@ -45,7 +45,7 @@ const placeGhosts = (store: StoreType) => {
 			target: undefined,
 			inHouse: true,
 			respawnCounter: 0,
-			freezeCounter: 10,
+			freezeCounter: 25,
 			justReleasedFromHouse: false
 		},
 		{
@@ -57,7 +57,7 @@ const placeGhosts = (store: StoreType) => {
 			target: undefined,
 			inHouse: true,
 			respawnCounter: 0,
-			freezeCounter: 60,
+			freezeCounter: 75,
 			justReleasedFromHouse: false
 		},
 		{
@@ -69,7 +69,7 @@ const placeGhosts = (store: StoreType) => {
 			target: undefined,
 			inHouse: true,
 			respawnCounter: 0,
-			freezeCounter: 120,
+			freezeCounter: 150,
 			justReleasedFromHouse: false
 		}
 	];
@@ -145,8 +145,8 @@ const startGame = async (store: StoreType) => {
 /* ---------- utilities ---------- */
 
 const resetPacman = (store: StoreType) => {
-	store.pacman.x = 27;
-	store.pacman.y = 7;
+	store.pacman.x = 26;
+	store.pacman.y = 5;
 	store.pacman.direction = 'right';
 	store.pacman.recentPositions = [];
 };

@@ -18,16 +18,24 @@ const movePacman = (store: StoreType): boolean => {
 		if (hasPowerup && scaredGhosts.length > 0) {
 			const ghostPosition = findClosestScaredGhost(store);
 			targetPosition = ghostPosition ?? findOptimalTarget(store);
-		} else if (store.pacman.target) {
-			if (store.pacman.x === store.pacman.target.x && store.pacman.y === store.pacman.target.y) {
-				targetPosition = findOptimalTarget(store);
+		} else {
+			// Target Locking Logic: Only find a NEW target if:
+			// 1. Current target is missing
+			// 2. Current target was reached (eaten)
+			// 3. A significantly better target exists (Hysteresis)
+			const currentTarget = store.pacman.target;
+			const bestAvailable = findOptimalTarget(store);
+
+			if (
+				!currentTarget ||
+				(store.pacman.x === currentTarget.x && store.pacman.y === currentTarget.y) ||
+				(bestAvailable && bestAvailable.value > (currentTarget.value || 0) * 2)
+			) {
+				targetPosition = bestAvailable;
 				store.pacman.target = targetPosition;
 			} else {
-				targetPosition = store.pacman.target;
+				targetPosition = currentTarget;
 			}
-		} else {
-			targetPosition = findOptimalTarget(store);
-			store.pacman.target = targetPosition;
 		}
 
 		// Safety check to ensure targetPosition is never undefined
@@ -58,7 +66,7 @@ const findClosestScaredGhost = (store: StoreType) => {
 	);
 };
 
-const findOptimalTarget = (store: StoreType) => {
+const findOptimalTarget = (store: StoreType): Point2d & { value: number } => {
 	const pointCells: { x: number; y: number; value: number }[] = [];
 
 	for (let x = 0; x < GRID_WIDTH; x++) {
@@ -164,7 +172,11 @@ const calculateOptimalPath = (store: StoreType, target: Point2d) => {
 				const newPath = [...path, { x: newX, y: newY }];
 				const danger = dangerMap.get(key) || 0;
 				const pointValue = store.grid[newX][newY].commitsCount;
-				const distanceToTarget = MovementUtils.calculateDistance(newX, newY, target.x, target.y);
+
+				// A* Heuristic: Manhattan distance to target
+				const h = Math.abs(newX - target.x) + Math.abs(newY - target.y);
+				const distanceToTarget = h;
+
 				const revisitPenalty = store.pacman.recentPositions?.includes(key) ? 100 : 0;
 
 				let safetyScore, pointScore, finalScore;
