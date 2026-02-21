@@ -139,11 +139,11 @@ const startGame = async (store: StoreType) => {
 				return Math.max(0.01, newVal);
 			};
 
-			// Define Mutations: Generate 10 competitors (Baseline + 9 Mutations)
+			// Define Mutations: Generate 100 competitors (Baseline + 99 Mutations)
 			const competitors = [{ name: 'Baseline', dna: { ...originalDNA } }];
-			for (let i = 0; i < 9; i++) {
+			for (let i = 0; i < 99; i++) {
 				competitors.push({
-					name: `Offspring ${String.fromCharCode(65 + i)}`,
+					name: `Offspring ${String.fromCharCode(65 + (i % 26))}${i >= 26 ? Math.floor(i / 26) : ''}`,
 					dna: {
 						safetyWeight: mutate(originalDNA.safetyWeight),
 						pointWeight: mutate(originalDNA.pointWeight),
