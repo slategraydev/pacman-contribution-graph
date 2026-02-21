@@ -26852,9 +26852,9 @@ const PACMAN_COLOR_POWERUP = 'red';
 const PACMAN_COLOR_DEAD = '#80808064';
 const GHOST_NAMES = (/* unused pure expression or super */ null && (['blinky', 'clyde', 'inky', 'pinky', 'eyes']));
 const MONTHS = (/* unused pure expression or super */ null && (['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']));
-const DELTA_TIME = 100; // 100ms per frame instead of 200ms
-const PACMAN_DEATH_DURATION = 20;
-const PACMAN_POWERUP_DURATION = 30;
+const DELTA_TIME = 200;
+const PACMAN_DEATH_DURATION = 10;
+const PACMAN_POWERUP_DURATION = 15;
 /* ───────────── Official GitHub Palettes ─────────────
    5-color array: 0 = NONE … 4 = FOURTH_QUARTILE          */
 const GITHUB_LIGHT = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
@@ -27412,9 +27412,9 @@ const RECENT_POSITIONS_LIMIT = 5;
 const movePacman = (store) => {
     if (store.pacman.deadRemainingDuration)
         return false;
-    // Classic arcade feature: Pac-Man pauses for a frame when eating a dot
-    if (store.pacman.pauseFrames > 0) {
-        store.pacman.pauseFrames--;
+    // Classic arcade feature: Pac-Man pauses when eating a dot
+    if (store.pacman.pauseRemainingMs > 0) {
+        store.pacman.pauseRemainingMs -= DELTA_TIME;
         return false;
     }
     const hasPowerup = !!store.pacman.powerupRemainingDuration;
@@ -27665,8 +27665,8 @@ const checkAndEatPoint = (store) => {
         cell.level = 'NONE';
         cell.color = theme.intensityColors[0];
         cell.commitsCount = 0;
-        // Set pause for next frame (arcade stop-and-go)
-        store.pacman.pauseFrames = 1;
+        // Set pause (arcade stop-and-go)
+        store.pacman.pauseRemainingMs = 10;
         return true;
     }
     return false;
@@ -28389,7 +28389,7 @@ const placePacman = (store) => {
         totalPoints: 0,
         deadRemainingDuration: 0,
         powerupRemainingDuration: 0,
-        pauseFrames: 0,
+        pauseRemainingMs: 0,
         recentPositions: []
     };
 };
@@ -28686,7 +28686,7 @@ const Store = {
         totalPoints: 0,
         deadRemainingDuration: 0,
         powerupRemainingDuration: 0,
-        pauseFrames: 0,
+        pauseRemainingMs: 0,
         recentPositions: []
     },
     ghosts: [],

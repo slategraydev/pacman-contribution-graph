@@ -1,4 +1,4 @@
-import { GRID_HEIGHT, GRID_WIDTH, PACMAN_POWERUP_DURATION } from '../core/constants';
+import { DELTA_TIME, GRID_HEIGHT, GRID_WIDTH, PACMAN_POWERUP_DURATION } from '../core/constants';
 import { PlayerStyle, Point2d, StoreType } from '../types';
 import { Utils } from '../utils/utils';
 import { MovementUtils } from './movement-utils';
@@ -8,9 +8,9 @@ const RECENT_POSITIONS_LIMIT = 5;
 const movePacman = (store: StoreType): boolean => {
 	if (store.pacman.deadRemainingDuration) return false;
 
-	// Classic arcade feature: Pac-Man pauses for a frame when eating a dot
-	if (store.pacman.pauseFrames > 0) {
-		store.pacman.pauseFrames--;
+	// Classic arcade feature: Pac-Man pauses when eating a dot
+	if (store.pacman.pauseRemainingMs > 0) {
+		store.pacman.pauseRemainingMs -= DELTA_TIME;
 		return false;
 	}
 
@@ -313,8 +313,8 @@ const checkAndEatPoint = (store: StoreType): boolean => {
 		cell.color = theme.intensityColors[0];
 		cell.commitsCount = 0;
 
-		// Set pause for next frame (arcade stop-and-go)
-		store.pacman.pauseFrames = 1;
+		// Set pause (arcade stop-and-go)
+		store.pacman.pauseRemainingMs = 10;
 
 		return true;
 	}
