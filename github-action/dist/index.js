@@ -26852,9 +26852,9 @@ const PACMAN_COLOR_POWERUP = 'red';
 const PACMAN_COLOR_DEAD = '#80808064';
 const GHOST_NAMES = (/* unused pure expression or super */ null && (['blinky', 'clyde', 'inky', 'pinky', 'eyes']));
 const MONTHS = (/* unused pure expression or super */ null && (['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']));
-const DELTA_TIME = 200;
-const PACMAN_DEATH_DURATION = 10;
-const PACMAN_POWERUP_DURATION = 15;
+const DELTA_TIME = 100; // 100ms per frame instead of 200ms
+const PACMAN_DEATH_DURATION = 20;
+const PACMAN_POWERUP_DURATION = 30;
 /* ───────────── Official GitHub Palettes ─────────────
    5-color array: 0 = NONE … 4 = FOURTH_QUARTILE          */
 const GITHUB_LIGHT = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
@@ -26936,8 +26936,8 @@ const WALLS = {
  * @param position 'up', 'down', 'left', or 'right' relative to that cell
  */
 const setWall = (cellX, cellY, position) => {
-    const x = cellX - 1;
-    const y = cellY - 1;
+    const x = cellX;
+    const y = cellY;
     switch (position) {
         case 'up':
             if (x >= 0 && x < WALLS.horizontal.length && y >= 0 && y < WALLS.horizontal[0].length) {
@@ -28838,30 +28838,30 @@ const Providers = {
 ;// CONCATENATED MODULE: ../src/utils/grid.ts
 
 const buildWalls = () => {
-    // (1,1,right) places a bar to the right of the first commit
+    // (0,0,right) places a bar to the right of the first commit (cell 0,0)
     // SLATE - Final Build Verification
     // S
-    setWall(4, 1, 'down');
-    setWall(5, 1, 'down');
-    setWall(3, 2, 'right');
-    setWall(3, 3, 'right');
-    setWall(4, 3, 'down');
-    setWall(5, 3, 'down');
-    setWall(6, 3, 'down');
-    setWall(5, 4, 'right');
-    setWall(5, 5, 'right');
-    setWall(5, 5, 'down');
-    setWall(6, 5, 'down');
+    setWall(3, 0, 'down');
+    setWall(4, 0, 'down');
+    setWall(2, 1, 'right');
+    setWall(2, 2, 'right');
+    setWall(3, 2, 'down');
+    setWall(4, 2, 'down');
+    setWall(5, 2, 'down');
+    setWall(4, 3, 'right');
+    setWall(4, 4, 'right');
+    setWall(4, 4, 'down');
+    setWall(5, 4, 'down');
     // Ghost House
-    setWall(26, 4, 'up');
-    setWall(28, 4, 'up');
-    setWall(26, 5, 'down');
-    setWall(27, 5, 'down');
-    setWall(28, 5, 'down');
-    setWall(26, 4, 'left');
-    setWall(26, 5, 'left');
-    setWall(28, 4, 'right');
-    setWall(28, 5, 'right');
+    setWall(25, 3, 'up');
+    setWall(27, 3, 'up');
+    setWall(25, 4, 'down');
+    setWall(26, 4, 'down');
+    setWall(27, 4, 'down');
+    setWall(25, 3, 'left');
+    setWall(25, 4, 'left');
+    setWall(27, 3, 'right');
+    setWall(27, 4, 'right');
 };
 const Grid = {
     buildWalls

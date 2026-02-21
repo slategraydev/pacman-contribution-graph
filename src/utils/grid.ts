@@ -1,32 +1,32 @@
 import { setWall } from '../core/constants';
 
 const buildWalls = () => {
-	// (1,1,right) places a bar to the right of the first commit
+	// (0,0,right) places a bar to the right of the first commit (cell 0,0)
 
 	// SLATE - Final Build Verification
 	// S
-	setWall(4, 1, 'down');
-	setWall(5, 1, 'down');
-	setWall(3, 2, 'right');
-	setWall(3, 3, 'right');
-	setWall(4, 3, 'down');
-	setWall(5, 3, 'down');
-	setWall(6, 3, 'down');
-	setWall(5, 4, 'right');
-	setWall(5, 5, 'right');
-	setWall(5, 5, 'down');
-	setWall(6, 5, 'down');
+	setWall(3, 0, 'down');
+	setWall(4, 0, 'down');
+	setWall(2, 1, 'right');
+	setWall(2, 2, 'right');
+	setWall(3, 2, 'down');
+	setWall(4, 2, 'down');
+	setWall(5, 2, 'down');
+	setWall(4, 3, 'right');
+	setWall(4, 4, 'right');
+	setWall(4, 4, 'down');
+	setWall(5, 4, 'down');
 
 	// Ghost House
-	setWall(26, 4, 'up');
-	setWall(28, 4, 'up');
-	setWall(26, 5, 'down');
-	setWall(27, 5, 'down');
-	setWall(28, 5, 'down');
-	setWall(26, 4, 'left');
-	setWall(26, 5, 'left');
-	setWall(28, 4, 'right');
-	setWall(28, 5, 'right');
+	setWall(25, 3, 'up');
+	setWall(27, 3, 'up');
+	setWall(25, 4, 'down');
+	setWall(26, 4, 'down');
+	setWall(27, 4, 'down');
+	setWall(25, 3, 'left');
+	setWall(25, 4, 'left');
+	setWall(27, 3, 'right');
+	setWall(27, 4, 'right');
 };
 
 export const Grid = {

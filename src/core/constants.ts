@@ -14,9 +14,9 @@ export const GHOST_NAMES: GhostName[] = ['blinky', 'clyde', 'inky', 'pinky', 'ey
 
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-export const DELTA_TIME = 200;
-export const PACMAN_DEATH_DURATION = 10;
-export const PACMAN_POWERUP_DURATION = 15;
+export const DELTA_TIME = 100; // 100ms per frame instead of 200ms
+export const PACMAN_DEATH_DURATION = 20;
+export const PACMAN_POWERUP_DURATION = 30;
 
 /* ───────────── Official GitHub Palettes ─────────────
    5-color array: 0 = NONE … 4 = FOURTH_QUARTILE          */
@@ -110,8 +110,8 @@ export const WALLS: {
  * @param position 'up', 'down', 'left', or 'right' relative to that cell
  */
 export const setWall = (cellX: number, cellY: number, position: 'up' | 'down' | 'left' | 'right') => {
-	const x = cellX - 1;
-	const y = cellY - 1;
+	const x = cellX;
+	const y = cellY;
 
 	switch (position) {
 		case 'up':

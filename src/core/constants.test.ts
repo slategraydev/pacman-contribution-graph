@@ -21,20 +21,20 @@ describe('Walls and constants', () => {
 	});
 
 	it('setWall toggles correct cells and hasWall reflects it', () => {
-		setWall(1, 1, 'up');
+		setWall(0, 0, 'up');
 		expect(WALLS.horizontal[0][0].active).toBe(true);
 		expect(hasWall(0, 0, 'up')).toBe(true);
 		expect(hasWall(0, 0, 'down')).toBe(false);
 
-		setWall(1, 1, 'down');
+		setWall(0, 0, 'down');
 		expect(hasWall(0, 0, 'down')).toBe(true);
 
-		setWall(1, 1, 'left');
+		setWall(0, 0, 'left');
 		expect(WALLS.vertical[0][0].active).toBe(true);
 		expect(hasWall(0, 0, 'left')).toBe(true);
 		expect(hasWall(0, 0, 'right')).toBe(false);
 
-		setWall(1, 1, 'right');
+		setWall(0, 0, 'right');
 		expect(hasWall(0, 0, 'right')).toBe(true);
 	});
 });
