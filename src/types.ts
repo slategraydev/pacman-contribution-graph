@@ -28,6 +28,7 @@ export interface Pacman {
 	points: number;
 	totalPoints: number;
 	deadRemainingDuration: number;
+	pauseRemainingDuration: number;
 	powerupRemainingDuration: number;
 	recentPositions: string[];
 	target?: Point2d;

@@ -10,6 +10,7 @@ export const Store: StoreType = {
 		points: 0,
 		totalPoints: 0,
 		deadRemainingDuration: 0,
+		pauseRemainingDuration: 0,
 		powerupRemainingDuration: 0,
 		recentPositions: [],
 		lives: 3

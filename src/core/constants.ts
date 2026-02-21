@@ -16,6 +16,7 @@ export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', '
 
 export const DELTA_TIME = 150; // 150ms per frame
 export const PACMAN_DEATH_DURATION = 10;
+export const PACMAN_EAT_GHOST_PAUSE_DURATION = 1;
 export const PACMAN_POWERUP_DURATION = 10;
 
 /* ───────────── Official GitHub Palettes ─────────────

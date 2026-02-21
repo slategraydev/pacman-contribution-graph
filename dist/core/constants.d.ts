@@ -10,6 +10,7 @@ export declare const GHOST_NAMES: GhostName[];
 export declare const MONTHS: string[];
 export declare const DELTA_TIME = 150;
 export declare const PACMAN_DEATH_DURATION = 10;
+export declare const PACMAN_EAT_GHOST_PAUSE_DURATION = 1;
 export declare const PACMAN_POWERUP_DURATION = 10;
 export declare const GAME_THEMES: {
     [key in ThemeKeys]: GameTheme;

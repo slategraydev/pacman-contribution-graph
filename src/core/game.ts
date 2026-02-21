@@ -5,7 +5,7 @@ import { Canvas } from '../renderers/canvas';
 import { SVG } from '../renderers/svg';
 import { GhostName, PlayerStyle, StoreType } from '../types';
 import { Utils } from '../utils/utils';
-import { DELTA_TIME, PACMAN_DEATH_DURATION } from './constants';
+import { DELTA_TIME, PACMAN_DEATH_DURATION, PACMAN_EAT_GHOST_PAUSE_DURATION } from './constants';
 
 /* ---------- positioning helpers ---------- */
 
@@ -17,6 +17,7 @@ const placePacman = (store: StoreType) => {
 		points: 0,
 		totalPoints: 0,
 		deadRemainingDuration: 0,
+		pauseRemainingDuration: 0,
 		powerupRemainingDuration: 0,
 		recentPositions: [],
 		lives: 3
@@ -117,25 +118,40 @@ const startGame = async (store: StoreType) => {
 		if (remainingCells()) {
 			const originalDNA = { ...store.config.intelligence.dna };
 
-			// Define Mutations
+			// Helper to apply a random drift of ±10% to a value
+			const mutate = (val: number, intensity = 0.1) => {
+				const drift = 1 + (Math.random() * intensity * 2 - intensity);
+				return val * drift;
+			};
+
+			// Define Mutations: Generate 3 random offspring based on the current DNA
 			const competitors = [
 				{ name: 'Baseline', dna: { ...originalDNA } },
 				{
-					name: 'Aggressive',
+					name: 'Offspring A',
 					dna: {
-						...originalDNA,
-						pointWeight: originalDNA.pointWeight * 1.2,
-						safetyWeight: originalDNA.safetyWeight * 0.8,
-						dangerRadius: Math.max(3, originalDNA.dangerRadius - 1)
+						safetyWeight: mutate(originalDNA.safetyWeight),
+						pointWeight: mutate(originalDNA.pointWeight),
+						dangerRadius: Math.max(2, Math.round(mutate(originalDNA.dangerRadius))),
+						revisitPenalty: mutate(originalDNA.revisitPenalty)
 					}
 				},
 				{
-					name: 'Conservative',
+					name: 'Offspring B',
 					dna: {
-						...originalDNA,
-						safetyWeight: originalDNA.safetyWeight * 1.2,
-						pointWeight: originalDNA.pointWeight * 0.8,
-						dangerRadius: Math.min(10, originalDNA.dangerRadius + 1)
+						safetyWeight: mutate(originalDNA.safetyWeight),
+						pointWeight: mutate(originalDNA.pointWeight),
+						dangerRadius: Math.max(2, Math.round(mutate(originalDNA.dangerRadius))),
+						revisitPenalty: mutate(originalDNA.revisitPenalty)
+					}
+				},
+				{
+					name: 'Offspring C',
+					dna: {
+						safetyWeight: mutate(originalDNA.safetyWeight),
+						pointWeight: mutate(originalDNA.pointWeight),
+						dangerRadius: Math.max(2, Math.round(mutate(originalDNA.dangerRadius))),
+						revisitPenalty: mutate(originalDNA.revisitPenalty)
 					}
 				}
 			];
@@ -241,6 +257,7 @@ const resetPacman = (store: StoreType) => {
 	store.pacman.direction = 'right';
 	store.pacman.points = 0;
 	store.pacman.powerupRemainingDuration = 0;
+	store.pacman.pauseRemainingDuration = 0;
 	store.pacman.target = undefined;
 	store.pacman.recentPositions = [];
 };
@@ -286,6 +303,23 @@ export const updateGame = async (store: StoreType, forceFinish = false, headless
 		if (headless) return;
 
 		// Snapshot and render the current (dead or reset) state, then pause logic
+		pushSnapshot(store, false);
+		if (store.config.outputFormat == 'canvas') {
+			Canvas.drawGrid(store);
+			Canvas.drawPacman(store);
+			Canvas.drawGhosts(store);
+			Canvas.drawSoundController(store);
+		}
+		return;
+	}
+
+	/* -------- pacman timers (GHOST EATEN PAUSE) -------- */
+	if (store.pacman.pauseRemainingDuration > 0) {
+		store.pacman.pauseRemainingDuration--;
+
+		if (headless) return;
+
+		// Snapshot and render the current state, then pause logic
 		pushSnapshot(store, false);
 		if (store.config.outputFormat == 'canvas') {
 			Canvas.drawGrid(store);
@@ -431,7 +465,7 @@ const pushSnapshot = (store: StoreType, includeGrid: boolean) => {
 /* ---------- collisions & house ---------- */
 
 const checkCollisions = (store: StoreType) => {
-	if (store.pacman.deadRemainingDuration) return;
+	if (store.pacman.deadRemainingDuration || store.pacman.pauseRemainingDuration) return;
 
 	store.ghosts.forEach((ghost) => {
 		// If the ghost is eyes, there should be no collision
@@ -444,6 +478,7 @@ const checkCollisions = (store: StoreType) => {
 				ghost.scared = false;
 				ghost.target = { x: 26, y: 3 };
 				store.pacman.points += 10;
+				store.pacman.pauseRemainingDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;
 			} else {
 				store.pacman.points = 0;
 				store.pacman.powerupRemainingDuration = 0;
