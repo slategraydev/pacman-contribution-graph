@@ -140,7 +140,7 @@ const countRemainingDots = (store: StoreType): number => {
 };
 
 const updateGameMode = (store: StoreType) => {
-	if (store.pacman.powerupRemainingDuration > 0) return;
+	if (store.pacman.powerupRemainingDuration > 0 || store.pacman.pauseRemainingDuration > 0) return;
 
 	modeTimer++;
 	const modeDuration = currentMode === 'scatter' ? SCATTER_MODE_DURATION : CHASE_MODE_DURATION;

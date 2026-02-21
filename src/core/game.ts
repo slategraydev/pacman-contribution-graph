@@ -107,7 +107,7 @@ const startGame = async (store: StoreType) => {
 	if (!store.config.intelligence) {
 		store.config.intelligence = {
 			generation: 1,
-			dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100 },
+			dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 },
 			lastFitness: 0
 		};
 	}
@@ -128,40 +128,24 @@ const startGame = async (store: StoreType) => {
 				return val * drift;
 			};
 
-			// Define Mutations: Generate 3 random offspring based on the current DNA
-			const competitors = [
-				{ name: 'Baseline', dna: { ...originalDNA } },
-				{
-					name: 'Offspring A',
+			// Define Mutations: Generate 10 competitors (Baseline + 9 Mutations)
+			const competitors = [{ name: 'Baseline', dna: { ...originalDNA } }];
+			for (let i = 0; i < 9; i++) {
+				competitors.push({
+					name: `Offspring ${String.fromCharCode(65 + i)}`,
 					dna: {
 						safetyWeight: mutate(originalDNA.safetyWeight),
 						pointWeight: mutate(originalDNA.pointWeight),
 						dangerRadius: Math.max(2, Math.round(mutate(originalDNA.dangerRadius))),
-						revisitPenalty: mutate(originalDNA.revisitPenalty)
+						revisitPenalty: mutate(originalDNA.revisitPenalty),
+						scaredGhostWeight: mutate(originalDNA.scaredGhostWeight)
 					}
-				},
-				{
-					name: 'Offspring B',
-					dna: {
-						safetyWeight: mutate(originalDNA.safetyWeight),
-						pointWeight: mutate(originalDNA.pointWeight),
-						dangerRadius: Math.max(2, Math.round(mutate(originalDNA.dangerRadius))),
-						revisitPenalty: mutate(originalDNA.revisitPenalty)
-					}
-				},
-				{
-					name: 'Offspring C',
-					dna: {
-						safetyWeight: mutate(originalDNA.safetyWeight),
-						pointWeight: mutate(originalDNA.pointWeight),
-						dangerRadius: Math.max(2, Math.round(mutate(originalDNA.dangerRadius))),
-						revisitPenalty: mutate(originalDNA.revisitPenalty)
-					}
-				}
-			];
+				});
+			}
 
 			let bestFitness = -1;
 			let winnerDNA = originalDNA;
+			let bestHistory: any[] = [];
 
 			for (const competitor of competitors) {
 				// Deep clone store for sandbox run, but preserve functions in config
@@ -191,12 +175,22 @@ const startGame = async (store: StoreType) => {
 				if (fitness > bestFitness) {
 					bestFitness = fitness;
 					winnerDNA = competitor.dna;
+					bestHistory = sandboxStore.gameHistory;
 				}
 			}
 
 			// Update Intelligence with the winner
 			store.config.intelligence.dna = winnerDNA;
 			store.config.intelligence.lastFitness = bestFitness;
+
+			// REUSE the best history for the final SVG output to save CPU time
+			store.gameHistory = bestHistory;
+			store.gameEnded = true;
+
+			const svg = SVG.generateAnimatedSVG(store);
+			store.config.svgCallback(svg);
+			store.config.gameOverCallback();
+			return;
 		}
 	}
 

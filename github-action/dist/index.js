@@ -27189,7 +27189,7 @@ const countRemainingDots = (store) => {
     return count;
 };
 const updateGameMode = (store) => {
-    if (store.pacman.powerupRemainingDuration > 0)
+    if (store.pacman.powerupRemainingDuration > 0 || store.pacman.pauseRemainingDuration > 0)
         return;
     modeTimer++;
     const modeDuration = currentMode === 'scatter' ? SCATTER_MODE_DURATION : CHASE_MODE_DURATION;
@@ -27494,11 +27494,18 @@ const findClosestScaredGhost = (store) => {
     }, { x: store.pacman.x, y: store.pacman.y, distance: Infinity });
     if (closest.distance === Infinity)
         return null;
+    const dna = store.config.intelligence?.dna || {
+        safetyWeight: 1.5,
+        pointWeight: 0.8,
+        dangerRadius: 7,
+        revisitPenalty: 100,
+        scaredGhostWeight: 3.0
+    };
     return {
         x: closest.x,
         y: closest.y,
         // Give scared ghosts a much higher base value to ensure they are prioritized over dots
-        value: (1000 / (closest.distance + 1)) * 3
+        value: (1000 / (closest.distance + 1)) * dna.scaredGhostWeight
     };
 };
 const findOptimalTarget = (store) => {
@@ -27535,7 +27542,8 @@ const calculateOptimalPath = (store, target) => {
         safetyWeight: 1.5,
         pointWeight: 0.8,
         dangerRadius: 7,
-        revisitPenalty: 100
+        revisitPenalty: 100,
+        scaredGhostWeight: 3.0
     };
     const safetyWeight = dna.safetyWeight;
     const pointWeight = dna.pointWeight;
@@ -28180,7 +28188,8 @@ const generateAnimatedSVG = (store) => {
         svg += `<text x="160" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
         svg += `<text x="260" y="${textY}">RAD: ${dna.dangerRadius}</text>`;
         svg += `<text x="320" y="${textY}">STUCK: ${dna.revisitPenalty}</text>`;
-        svg += `<text x="410" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
+        svg += `<text x="410" y="${textY}">HUNT: ${dna.scaredGhostWeight.toFixed(2)}</text>`;
+        svg += `<text x="500" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
         svg += `</g>`;
     }
     svg += '</svg>';
@@ -28523,7 +28532,7 @@ const startGame = async (store) => {
     if (!store.config.intelligence) {
         store.config.intelligence = {
             generation: 1,
-            dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100 },
+            dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 },
             lastFitness: 0
         };
     }
@@ -28539,39 +28548,23 @@ const startGame = async (store) => {
                 const drift = 1 + (Math.random() * intensity * 2 - intensity);
                 return val * drift;
             };
-            // Define Mutations: Generate 3 random offspring based on the current DNA
-            const competitors = [
-                { name: 'Baseline', dna: { ...originalDNA } },
-                {
-                    name: 'Offspring A',
+            // Define Mutations: Generate 10 competitors (Baseline + 9 Mutations)
+            const competitors = [{ name: 'Baseline', dna: { ...originalDNA } }];
+            for (let i = 0; i < 9; i++) {
+                competitors.push({
+                    name: `Offspring ${String.fromCharCode(65 + i)}`,
                     dna: {
                         safetyWeight: mutate(originalDNA.safetyWeight),
                         pointWeight: mutate(originalDNA.pointWeight),
                         dangerRadius: Math.max(2, Math.round(mutate(originalDNA.dangerRadius))),
-                        revisitPenalty: mutate(originalDNA.revisitPenalty)
+                        revisitPenalty: mutate(originalDNA.revisitPenalty),
+                        scaredGhostWeight: mutate(originalDNA.scaredGhostWeight)
                     }
-                },
-                {
-                    name: 'Offspring B',
-                    dna: {
-                        safetyWeight: mutate(originalDNA.safetyWeight),
-                        pointWeight: mutate(originalDNA.pointWeight),
-                        dangerRadius: Math.max(2, Math.round(mutate(originalDNA.dangerRadius))),
-                        revisitPenalty: mutate(originalDNA.revisitPenalty)
-                    }
-                },
-                {
-                    name: 'Offspring C',
-                    dna: {
-                        safetyWeight: mutate(originalDNA.safetyWeight),
-                        pointWeight: mutate(originalDNA.pointWeight),
-                        dangerRadius: Math.max(2, Math.round(mutate(originalDNA.dangerRadius))),
-                        revisitPenalty: mutate(originalDNA.revisitPenalty)
-                    }
-                }
-            ];
+                });
+            }
             let bestFitness = -1;
             let winnerDNA = originalDNA;
+            let bestHistory = [];
             for (const competitor of competitors) {
                 // Deep clone store for sandbox run, but preserve functions in config
                 const sandboxStore = JSON.parse(JSON.stringify(store));
@@ -28596,11 +28589,19 @@ const startGame = async (store) => {
                 if (fitness > bestFitness) {
                     bestFitness = fitness;
                     winnerDNA = competitor.dna;
+                    bestHistory = sandboxStore.gameHistory;
                 }
             }
             // Update Intelligence with the winner
             store.config.intelligence.dna = winnerDNA;
             store.config.intelligence.lastFitness = bestFitness;
+            // REUSE the best history for the final SVG output to save CPU time
+            store.gameHistory = bestHistory;
+            store.gameEnded = true;
+            const svg = SVG.generateAnimatedSVG(store);
+            store.config.svgCallback(svg);
+            store.config.gameOverCallback();
+            return;
         }
     }
     // --- FINAL RENDERING RUN ---
@@ -29058,119 +29059,118 @@ const Providers = {
 
 const buildWalls = () => {
     // (0,0,right) places a bar to the right of the first commit (cell 0,0)
-    const GRAY = '#808080';
+    const WHITE = '#FFFFFF';
     const RED = '#D51D1D';
     // SLATE
     // S
-    setWall(3, 0, 'down', RED);
-    setWall(4, 0, 'down', RED);
-    setWall(2, 1, 'right', RED);
-    setWall(2, 2, 'right', RED);
-    setWall(3, 2, 'down', RED);
-    setWall(4, 2, 'down', RED);
-    setWall(4, 3, 'right', RED);
-    setWall(4, 4, 'right', RED);
-    setWall(4, 4, 'down', RED);
-    setWall(3, 4, 'down', RED);
+    setWall(3, 0, 'down', WHITE);
+    setWall(4, 0, 'down', WHITE);
+    setWall(2, 1, 'right', WHITE);
+    setWall(2, 2, 'right', WHITE);
+    setWall(3, 2, 'down', WHITE);
+    setWall(4, 2, 'down', WHITE);
+    setWall(4, 3, 'right', WHITE);
+    setWall(4, 4, 'right', WHITE);
+    setWall(4, 4, 'down', WHITE);
+    setWall(3, 4, 'down', WHITE);
     // L
-    setWall(6, 1, 'right', RED);
-    setWall(6, 2, 'right', RED);
-    setWall(6, 3, 'right', RED);
-    setWall(6, 4, 'right', RED);
-    setWall(7, 4, 'down', RED);
-    setWall(8, 4, 'down', RED);
+    setWall(6, 1, 'right', WHITE);
+    setWall(6, 2, 'right', WHITE);
+    setWall(6, 3, 'right', WHITE);
+    setWall(6, 4, 'right', WHITE);
+    setWall(7, 4, 'down', WHITE);
+    setWall(8, 4, 'down', WHITE);
     // A
-    setWall(11, 0, 'down', RED);
-    setWall(12, 0, 'down', RED);
-    setWall(10, 1, 'right', RED);
-    setWall(10, 2, 'right', RED);
-    setWall(10, 3, 'right', RED);
-    setWall(10, 4, 'right', RED);
-    setWall(12, 1, 'right', RED);
-    setWall(12, 2, 'right', RED);
-    setWall(12, 3, 'right', RED);
-    setWall(12, 4, 'right', RED);
-    setWall(11, 2, 'down', RED);
-    setWall(12, 2, 'down', RED);
+    setWall(11, 0, 'down', WHITE);
+    setWall(12, 0, 'down', WHITE);
+    setWall(10, 1, 'right', WHITE);
+    setWall(10, 2, 'right', WHITE);
+    setWall(10, 3, 'right', WHITE);
+    setWall(10, 4, 'right', WHITE);
+    setWall(12, 1, 'right', WHITE);
+    setWall(12, 2, 'right', WHITE);
+    setWall(12, 3, 'right', WHITE);
+    setWall(12, 4, 'right', WHITE);
+    setWall(11, 2, 'down', WHITE);
     // T
-    setWall(15, 0, 'down', RED);
-    setWall(16, 0, 'down', RED);
-    setWall(15, 1, 'right', RED);
-    setWall(15, 2, 'right', RED);
-    setWall(15, 3, 'right', RED);
-    setWall(15, 4, 'right', RED);
+    setWall(15, 0, 'down', WHITE);
+    setWall(16, 0, 'down', WHITE);
+    setWall(15, 1, 'right', WHITE);
+    setWall(15, 2, 'right', WHITE);
+    setWall(15, 3, 'right', WHITE);
+    setWall(15, 4, 'right', WHITE);
     // E
-    setWall(18, 1, 'right', RED);
-    setWall(18, 2, 'right', RED);
-    setWall(18, 3, 'right', RED);
-    setWall(18, 4, 'right', RED);
-    setWall(19, 0, 'down', RED);
-    setWall(20, 0, 'down', RED);
-    setWall(19, 2, 'down', RED);
-    setWall(20, 2, 'down', RED);
-    setWall(19, 4, 'down', RED);
-    setWall(20, 4, 'down', RED);
+    setWall(18, 1, 'right', WHITE);
+    setWall(18, 2, 'right', WHITE);
+    setWall(18, 3, 'right', WHITE);
+    setWall(18, 4, 'right', WHITE);
+    setWall(19, 0, 'down', WHITE);
+    setWall(20, 0, 'down', WHITE);
+    setWall(19, 2, 'down', WHITE);
+    setWall(20, 2, 'down', WHITE);
+    setWall(19, 4, 'down', WHITE);
+    setWall(20, 4, 'down', WHITE);
     // GRAY
     // G
-    setWall(32, 0, 'down', RED);
-    setWall(33, 0, 'down', RED);
-    setWall(31, 1, 'right', RED);
-    setWall(31, 2, 'right', RED);
-    setWall(31, 3, 'right', RED);
-    setWall(31, 4, 'right', RED);
-    setWall(32, 4, 'down', RED);
-    setWall(33, 4, 'down', RED);
-    setWall(33, 2, 'down', RED);
-    setWall(33, 3, 'right', RED);
-    setWall(33, 4, 'right', RED);
+    setWall(32, 0, 'down', WHITE);
+    setWall(33, 0, 'down', WHITE);
+    setWall(31, 1, 'right', WHITE);
+    setWall(31, 2, 'right', WHITE);
+    setWall(31, 3, 'right', WHITE);
+    setWall(31, 4, 'right', WHITE);
+    setWall(32, 4, 'down', WHITE);
+    setWall(33, 4, 'down', WHITE);
+    setWall(33, 2, 'down', WHITE);
+    setWall(33, 3, 'right', WHITE);
+    setWall(33, 4, 'right', WHITE);
     // R
-    setWall(35, 1, 'right', RED);
-    setWall(35, 2, 'right', RED);
-    setWall(35, 3, 'right', RED);
-    setWall(35, 4, 'right', RED);
-    setWall(37, 0, 'down', RED);
-    setWall(37, 1, 'right', RED);
-    setWall(36, 2, 'down', RED);
-    setWall(37, 2, 'down', RED);
-    setWall(36, 3, 'right', RED);
-    setWall(37, 4, 'right', RED);
+    setWall(35, 1, 'right', WHITE);
+    setWall(35, 2, 'right', WHITE);
+    setWall(35, 3, 'right', WHITE);
+    setWall(35, 4, 'right', WHITE);
+    setWall(36, 0, 'down', WHITE);
+    setWall(37, 0, 'down', WHITE);
+    setWall(37, 1, 'right', WHITE);
+    setWall(37, 2, 'down', WHITE);
+    setWall(36, 4, 'right', WHITE);
+    setWall(37, 4, 'right', WHITE);
     // A
-    setWall(40, 0, 'down', RED);
-    setWall(41, 0, 'down', RED);
-    setWall(39, 1, 'right', RED);
-    setWall(39, 2, 'right', RED);
-    setWall(39, 3, 'right', RED);
-    setWall(39, 4, 'right', RED);
-    setWall(41, 1, 'right', RED);
-    setWall(41, 2, 'right', RED);
-    setWall(41, 3, 'right', RED);
-    setWall(41, 4, 'right', RED);
-    setWall(40, 2, 'down', RED);
-    setWall(41, 2, 'down', RED);
+    setWall(40, 0, 'down', WHITE);
+    setWall(41, 0, 'down', WHITE);
+    setWall(39, 1, 'right', WHITE);
+    setWall(39, 2, 'right', WHITE);
+    setWall(39, 3, 'right', WHITE);
+    setWall(39, 4, 'right', WHITE);
+    setWall(41, 1, 'right', WHITE);
+    setWall(41, 2, 'right', WHITE);
+    setWall(41, 3, 'right', WHITE);
+    setWall(41, 4, 'right', WHITE);
+    setWall(40, 2, 'down', WHITE);
+    setWall(41, 2, 'down', WHITE);
     // Y
-    setWall(43, 0, 'right', RED);
-    setWall(41, 1, 'right', RED);
-    setWall(45, 0, 'right', RED);
-    setWall(45, 1, 'right', RED);
-    setWall(44, 2, 'down', RED);
-    setWall(44, 3, 'right', RED);
-    setWall(44, 4, 'right', RED);
-    setWall(44, 4, 'down', RED);
-    setWall(45, 4, 'down', RED);
+    setWall(43, 0, 'right', WHITE);
+    setWall(41, 1, 'right', WHITE);
+    setWall(45, 0, 'right', WHITE);
+    setWall(45, 1, 'right', WHITE);
+    setWall(44, 2, 'down', WHITE);
+    setWall(44, 3, 'right', WHITE);
+    setWall(44, 4, 'right', WHITE);
+    setWall(44, 4, 'down', WHITE);
+    setWall(45, 4, 'down', WHITE);
     // Horizontal line and framing
     for (let x = 2; x <= 50; x++) {
-        setWall(x, 5, 'down', GRAY);
+        setWall(x, 5, 'down', RED);
     }
     // End vertical lines and dividers between letters
     const dividerXPositions = [1, 5, 9, 13, 17, 21, 30, 34, 38, 42, 50];
     dividerXPositions.forEach((x) => {
         for (let y = 1; y <= 5; y++) {
-            setWall(x, y, 'right', GRAY);
+            setWall(x, y, 'right', RED);
         }
     });
     // Final right-most vertical line
     for (let y = 1; y <= 5; y++) {
-        setWall(46, y, 'right', GRAY);
+        setWall(46, y, 'right', RED);
     }
     // Ghost House
     setWall(25, 3, 'up', RED);

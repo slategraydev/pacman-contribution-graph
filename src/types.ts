@@ -84,6 +84,7 @@ export interface DNA {
 	pointWeight: number;
 	dangerRadius: number;
 	revisitPenalty: number;
+	scaredGhostWeight: number;
 }
 
 export interface Intelligence {

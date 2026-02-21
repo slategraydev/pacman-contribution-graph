@@ -93,11 +93,19 @@ const findClosestScaredGhost = (store: StoreType): (Point2d & { value: number })
 
 	if (closest.distance === Infinity) return null;
 
+	const dna = store.config.intelligence?.dna || {
+		safetyWeight: 1.5,
+		pointWeight: 0.8,
+		dangerRadius: 7,
+		revisitPenalty: 100,
+		scaredGhostWeight: 3.0
+	};
+
 	return {
 		x: closest.x,
 		y: closest.y,
 		// Give scared ghosts a much higher base value to ensure they are prioritized over dots
-		value: (1000 / (closest.distance + 1)) * 3
+		value: (1000 / (closest.distance + 1)) * dna.scaredGhostWeight
 	};
 };
 
@@ -144,7 +152,8 @@ const calculateOptimalPath = (store: StoreType, target: Point2d) => {
 		safetyWeight: 1.5,
 		pointWeight: 0.8,
 		dangerRadius: 7,
-		revisitPenalty: 100
+		revisitPenalty: 100,
+		scaredGhostWeight: 3.0
 	};
 
 	const safetyWeight = dna.safetyWeight;
