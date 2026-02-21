@@ -43,16 +43,6 @@ const moveGhosts = (store: StoreType) => {
 
 		ghost.target = target;
 
-		// Arcade Feature: Ghosts move slightly slower than Pac-Man (approx 95% speed).
-		// We simulate this by having them skip a move every 20 frames.
-		if (store.frameCount % 20 === 0 && !ghost.justReleasedFromHouse) {
-			continue;
-		}
-
-		// Arcade Feature: Scared ghosts move much slower (approx 60% speed).
-		if (ghost.scared && store.frameCount % 3 === 0) {
-			continue;
-		}
 		// Use Arcade-style Target-Tile logic: Pick the move that results in the shortest
 		// straight-line distance to the target, and NEVER reverse direction.
 		const nextMove = getTargetTileMove(ghost, target, store);

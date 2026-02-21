@@ -128,7 +128,12 @@ const generateAnimatedSVG = (store: StoreType) => {
 		true
 	);
 	const pacmanPositionAnimation = generateChangingValuesAnimation(store, generatePacManPositions(store), false);
-	const pacmanRotationAnimation = generateChangingValuesAnimation(store, generatePacManRotations(store), true);
+
+	// Shift rotations: rotation for segment [i, i+1] should be rotations[i+1]
+	const rawRotations = generatePacManRotations(store);
+	const shiftedRotations = rawRotations.length > 1 ? [...rawRotations.slice(1), rawRotations[rawRotations.length - 1]] : rawRotations;
+
+	const pacmanRotationAnimation = generateChangingValuesAnimation(store, shiftedRotations, true);
 	svg += `<path id="pacman" d="${generatePacManPath(0.75)}" fill="${PACMAN_COLOR}">
 		<animate attributeName="fill" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanColorAnimation.keyTimes}"
@@ -232,8 +237,10 @@ function mapGhostStateChanges(store: StoreType, ghostIndex: number) {
 		stateChanges[state] = [{ time: 0, visible: false }];
 	});
 
-	// Get the initial ghost
-	const initialGhost = store.ghosts[ghostIndex];
+	const totalFrames = store.gameHistory.length;
+
+	// Get the initial ghost state from frame 1 if it exists (for immediate turning)
+	const initialGhost = totalFrames > 1 ? store.gameHistory[1].ghosts[ghostIndex] : store.gameHistory[0].ghosts[ghostIndex];
 	if (!initialGhost) return stateChanges;
 
 	// Set the initial state correctly
@@ -250,12 +257,19 @@ function mapGhostStateChanges(store: StoreType, ghostIndex: number) {
 	let lastState = initialState;
 
 	// Process each frame of the game history
-	store.gameHistory.forEach((state, frameIndex) => {
+	store.gameHistory.forEach((_state, frameIndex) => {
 		// If the ghost does not exist in this frame, skip
-		if (ghostIndex >= state.ghosts.length) return;
+		if (ghostIndex >= _state.ghosts.length) return;
 
-		const ghost = state.ghosts[ghostIndex];
-		const currentTime = frameIndex / (store.gameHistory.length - 1);
+		// Shift states: for segment [i, i+1], use state from gameHistory[i+1]
+		// If at last frame, just keep current
+		const targetFrameIndex = frameIndex + 1 < totalFrames ? frameIndex + 1 : frameIndex;
+		const targetState = store.gameHistory[targetFrameIndex];
+
+		if (ghostIndex >= targetState.ghosts.length) return;
+		const ghost = targetState.ghosts[ghostIndex];
+
+		const currentTime = frameIndex / (totalFrames - 1);
 
 		// Determine the current state
 		const currentState = ghost.scared
