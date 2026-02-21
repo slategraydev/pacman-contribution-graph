@@ -28540,8 +28540,13 @@ const startGame = async (store) => {
     }
     else {
         // DNA Migration: Ensure all fields exist if loading from an older version
+        const dna = store.config.intelligence.dna;
+        if (dna.scaredGhostWeight === undefined || dna.scaredGhostWeight === 0) {
+            dna.scaredGhostWeight = 3.0;
+        }
+        // Generic fallback for other fields
         const defaultDNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
-        store.config.intelligence.dna = { ...defaultDNA, ...store.config.intelligence.dna };
+        store.config.intelligence.dna = { ...defaultDNA, ...dna };
     }
     const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
     // --- THE DAILY TOURNAMENT (Evolutionary Step) ---
@@ -28553,7 +28558,12 @@ const startGame = async (store) => {
             // Helper to apply a random drift of ±10% to a value
             const mutate = (val, intensity = 0.1) => {
                 const drift = 1 + (Math.random() * intensity * 2 - intensity);
-                return val * drift;
+                let newVal = val * drift;
+                // If value is NaN or truly invalid, give it a baseline
+                if (isNaN(newVal) || newVal <= 0)
+                    newVal = 0.1;
+                // Hard floor of 0.10 ensures math stays alive for future drift
+                return Math.max(0.1, newVal);
             };
             // Define Mutations: Generate 10 competitors (Baseline + 9 Mutations)
             const competitors = [{ name: 'Baseline', dna: { ...originalDNA } }];
@@ -28571,6 +28581,7 @@ const startGame = async (store) => {
             }
             let bestFitness = -1;
             let winnerDNA = originalDNA;
+            let winnerName = 'Baseline';
             let bestHistory = [];
             for (const competitor of competitors) {
                 // Deep clone store for sandbox run, but preserve functions in config
@@ -28592,15 +28603,29 @@ const startGame = async (store) => {
                 while (!sandboxStore.gameEnded && sandboxStore.frameCount < MAX_FRAMES) {
                     await updateGame(sandboxStore, false, true); // true = headless
                 }
-                // Calculate Fitness: (Total Dots Eaten / Total Frames) * 1000
-                const dotsEaten = sandboxStore.pacman.totalPoints;
-                const fitness = (dotsEaten / (sandboxStore.frameCount || 1)) * 1000;
+                // --- REFINED FITNESS METRIC ---
+                // 1. Commits Value (Contribution points)
+                const commitsValue = sandboxStore.pacman.totalPoints;
+                // 2. Ghost Hunt Bonus (Pacman.points includes dots + ghosts*10)
+                // We reward hunting by giving extra weight to the general score
+                const huntValue = sandboxStore.pacman.points * 10;
+                // 3. Survival Bonus (Reward keeping lives)
+                const survivalValue = sandboxStore.pacman.lives * 100;
+                let fitness = ((commitsValue + huntValue + survivalValue) / (sandboxStore.frameCount || 1)) * 1000;
+                // 4. Completion Bonus (Massive reward for clearing the board)
+                const isCleared = !sandboxStore.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
+                if (isCleared) {
+                    fitness *= 2.0; // Double fitness if board is cleared
+                }
                 if (fitness > bestFitness || bestHistory.length === 0) {
                     bestFitness = fitness;
                     winnerDNA = competitor.dna;
+                    winnerName = competitor.name;
                     bestHistory = sandboxStore.gameHistory;
                 }
             }
+            console.log(`🏆 Tournament winner: ${winnerName} (Fitness: ${bestFitness.toFixed(2)})`);
+            console.log(`🧬 New DNA: SAFE=${winnerDNA.safetyWeight.toFixed(2)}, GREED=${winnerDNA.pointWeight.toFixed(2)}, RAD=${winnerDNA.dangerRadius.toFixed(2)}, HUNT=${winnerDNA.scaredGhostWeight.toFixed(2)}`);
             // Update Intelligence with the winner
             store.config.intelligence.dna = winnerDNA;
             store.config.intelligence.lastFitness = bestFitness;
