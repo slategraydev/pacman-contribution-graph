@@ -24,14 +24,10 @@ export declare const GHOSTS: {
 export declare const WALLS: {
     horizontal: {
         active: boolean;
-        id: string;
-        color?: string;
     }[][];
     vertical: {
         active: boolean;
-        id: string;
-        color?: string;
     }[][];
 };
-export declare const setWall: (x: number, y: number, direction: 'horizontal' | 'vertical', lineId: string, color?: string) => void;
+export declare const setWall: (x: number, y: number, direction: 'horizontal' | 'vertical') => void;
 export declare const hasWall: (x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') => boolean;

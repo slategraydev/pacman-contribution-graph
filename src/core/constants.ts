@@ -96,25 +96,25 @@ export const GHOSTS: {
 };
 
 export const WALLS: {
-	horizontal: { active: boolean; id: string; color?: string }[][];
-	vertical: { active: boolean; id: string; color?: string }[][];
+	horizontal: { active: boolean }[][];
+	vertical: { active: boolean }[][];
 } = {
 	horizontal: Array(GRID_WIDTH + 1)
 		.fill(null)
-		.map(() => Array(GRID_HEIGHT + 1).fill({ active: false, id: '' })),
+		.map(() => Array(GRID_HEIGHT + 1).fill({ active: false })),
 	vertical: Array(GRID_WIDTH + 1)
 		.fill(null)
-		.map(() => Array(GRID_HEIGHT + 1).fill({ active: false, id: '' }))
+		.map(() => Array(GRID_HEIGHT + 1).fill({ active: false }))
 };
 
-export const setWall = (x: number, y: number, direction: 'horizontal' | 'vertical', lineId: string, color?: string) => {
+export const setWall = (x: number, y: number, direction: 'horizontal' | 'vertical') => {
 	if (direction === 'horizontal') {
 		if (x >= 0 && x < WALLS.horizontal.length && y >= 0 && y < WALLS.horizontal[0].length) {
-			WALLS.horizontal[x][y] = { active: true, id: lineId, color };
+			WALLS.horizontal[x][y] = { active: true };
 		}
 	} else {
 		if (x >= 0 && x < WALLS.vertical.length && y >= 0 && y < WALLS.vertical[0].length) {
-			WALLS.vertical[x][y] = { active: true, id: lineId, color };
+			WALLS.vertical[x][y] = { active: true };
 		}
 	}
 };
@@ -124,10 +124,10 @@ export const hasWall = (x: number, y: number, direction: 'up' | 'down' | 'left' 
 		case 'up':
 			return WALLS.horizontal[x][y].active;
 		case 'down':
-			return WALLS.horizontal[x + 1][y].active;
+			return WALLS.horizontal[x][y + 1].active;
 		case 'left':
 			return WALLS.vertical[x][y].active;
 		case 'right':
-			return WALLS.vertical[x][y + 1].active;
+			return WALLS.vertical[x + 1][y].active;
 	}
 };
