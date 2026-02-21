@@ -28783,7 +28783,7 @@ const Providers = {
 
 const buildWalls = () => {
     // (1,1,right) places a bar to the right of the first commit
-    // SLATE
+    // SLATE - Final Build Verification
     // S
     setWall(4, 1, 'down');
     setWall(5, 1, 'down');
