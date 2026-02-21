@@ -26,8 +26,8 @@ const placePacman = (store: StoreType) => {
 const placeGhosts = (store: StoreType) => {
 	store.ghosts = [
 		{
-			x: 27,
-			y: 3, // Blinky starts OUTSIDE the house
+			x: 26,
+			y: 2, // Blinky: (27, 3) -> (26, 2)
 			name: 'blinky',
 			direction: 'left',
 			scared: false,
@@ -38,39 +38,39 @@ const placeGhosts = (store: StoreType) => {
 			justReleasedFromHouse: false
 		},
 		{
-			x: 26,
-			y: 5,
+			x: 25,
+			y: 4, // Pinky: (26, 5) -> (25, 4)
 			name: 'pinky',
 			direction: 'up',
 			scared: false,
 			target: undefined,
 			inHouse: true,
 			respawnCounter: 0,
-			freezeCounter: 10, // Increased wait
+			freezeCounter: 10,
 			justReleasedFromHouse: false
 		},
 		{
-			x: 27,
-			y: 5,
+			x: 26,
+			y: 4, // Inky: (27, 5) -> (26, 4)
 			name: 'inky',
 			direction: 'down',
 			scared: false,
 			target: undefined,
 			inHouse: true,
 			respawnCounter: 0,
-			freezeCounter: 60, // Much longer wait
+			freezeCounter: 60,
 			justReleasedFromHouse: false
 		},
 		{
-			x: 28,
-			y: 5,
+			x: 27,
+			y: 4, // Clyde: (28, 5) -> (27, 4)
 			name: 'clyde',
 			direction: 'up',
 			scared: false,
 			target: undefined,
 			inHouse: true,
 			respawnCounter: 0,
-			freezeCounter: 120, // Longest wait
+			freezeCounter: 120,
 			justReleasedFromHouse: false
 		}
 	];

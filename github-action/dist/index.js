@@ -27202,10 +27202,10 @@ const updateGameMode = (store) => {
     }
 };
 const moveGhostInHouse = (ghost, store) => {
-    // If the ghost is in the middle of being released, it moves towards the door (x=27, y=3)
+    // If the ghost is in the middle of being released, it moves towards the door (x=26, y=2)
     if (ghost.justReleasedFromHouse) {
-        if (ghost.x === 27) {
-            if (ghost.y > 3) {
+        if (ghost.x === 26) {
+            if (ghost.y > 2) {
                 ghost.y -= 1;
                 ghost.direction = 'up';
             }
@@ -27215,8 +27215,8 @@ const moveGhostInHouse = (ghost, store) => {
             }
         }
         else {
-            // Move horizontally towards the center column (27)
-            ghost.x < 27 ? ((ghost.x += 1), (ghost.direction = 'right')) : ((ghost.x -= 1), (ghost.direction = 'left'));
+            // Move horizontally towards the center column (26)
+            ghost.x < 26 ? ((ghost.x += 1), (ghost.direction = 'right')) : ((ghost.x -= 1), (ghost.direction = 'left'));
         }
         return;
     }
@@ -27229,9 +27229,9 @@ const moveGhostInHouse = (ghost, store) => {
         }
         return;
     }
-    // Arcade Feature: 1-grid vertical bobbing (between y=4 and y=5)
-    const topLimit = 4;
-    const bottomLimit = 5;
+    // Arcade Feature: 1-grid vertical bobbing (between y=3 and y=4)
+    const topLimit = 3;
+    const bottomLimit = 4;
     if (ghost.direction === 'up') {
         if (ghost.y <= topLimit) {
             ghost.direction = 'down';
@@ -27252,7 +27252,7 @@ const moveGhostInHouse = (ghost, store) => {
     }
 };
 const moveEyesToHome = (ghost, store) => {
-    const home = { x: 27, y: 4 };
+    const home = { x: 26, y: 3 };
     if (Math.abs(ghost.x - home.x) <= 1 && Math.abs(ghost.y - home.y) <= 1) {
         ghost.x = home.x;
         ghost.y = home.y;
@@ -28396,8 +28396,8 @@ const placePacman = (store) => {
 const placeGhosts = (store) => {
     store.ghosts = [
         {
-            x: 27,
-            y: 3,
+            x: 26,
+            y: 2,
             name: 'blinky',
             direction: 'left',
             scared: false,
@@ -28408,8 +28408,8 @@ const placeGhosts = (store) => {
             justReleasedFromHouse: false
         },
         {
-            x: 26,
-            y: 5,
+            x: 25,
+            y: 4,
             name: 'pinky',
             direction: 'up',
             scared: false,
@@ -28420,8 +28420,8 @@ const placeGhosts = (store) => {
             justReleasedFromHouse: false
         },
         {
-            x: 27,
-            y: 5,
+            x: 26,
+            y: 4,
             name: 'inky',
             direction: 'down',
             scared: false,
@@ -28432,8 +28432,8 @@ const placeGhosts = (store) => {
             justReleasedFromHouse: false
         },
         {
-            x: 28,
-            y: 5,
+            x: 27,
+            y: 4,
             name: 'clyde',
             direction: 'up',
             scared: false,

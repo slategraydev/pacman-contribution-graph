@@ -169,10 +169,10 @@ const updateGameMode = (store: StoreType) => {
 };
 
 const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
-	// If the ghost is in the middle of being released, it moves towards the door (x=27, y=3)
+	// If the ghost is in the middle of being released, it moves towards the door (x=26, y=2)
 	if (ghost.justReleasedFromHouse) {
-		if (ghost.x === 27) {
-			if (ghost.y > 3) {
+		if (ghost.x === 26) {
+			if (ghost.y > 2) {
 				ghost.y -= 1;
 				ghost.direction = 'up';
 			} else {
@@ -180,8 +180,8 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 				ghost.justReleasedFromHouse = false;
 			}
 		} else {
-			// Move horizontally towards the center column (27)
-			ghost.x < 27 ? ((ghost.x += 1), (ghost.direction = 'right')) : ((ghost.x -= 1), (ghost.direction = 'left'));
+			// Move horizontally towards the center column (26)
+			ghost.x < 26 ? ((ghost.x += 1), (ghost.direction = 'right')) : ((ghost.x -= 1), (ghost.direction = 'left'));
 		}
 		return;
 	}
@@ -196,9 +196,9 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 		return;
 	}
 
-	// Arcade Feature: 1-grid vertical bobbing (between y=4 and y=5)
-	const topLimit = 4;
-	const bottomLimit = 5;
+	// Arcade Feature: 1-grid vertical bobbing (between y=3 and y=4)
+	const topLimit = 3;
+	const bottomLimit = 4;
 
 	if (ghost.direction === 'up') {
 		if (ghost.y <= topLimit) {
@@ -218,7 +218,7 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 };
 
 const moveEyesToHome = (ghost: Ghost, store: StoreType) => {
-	const home = { x: 27, y: 4 };
+	const home = { x: 26, y: 3 };
 	if (Math.abs(ghost.x - home.x) <= 1 && Math.abs(ghost.y - home.y) <= 1) {
 		ghost.x = home.x;
 		ghost.y = home.y;
