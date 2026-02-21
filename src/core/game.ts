@@ -158,7 +158,27 @@ export const determineGhostName = (index: number): GhostName => {
 
 /* ---------- update per frame ---------- */
 
-const updateGame = async (store: StoreType, forceFinish = false) => {
+export const updateGame = async (store: StoreType, forceFinish = false) => {
+	/* -------- pacman timers (DEATH PAUSE) -------- */
+	if (store.pacman.deadRemainingDuration > 0) {
+		store.pacman.deadRemainingDuration--;
+
+		if (store.pacman.deadRemainingDuration === 0) {
+			resetPacman(store);
+			placeGhosts(store);
+		}
+
+		// Snapshot and render the current (dead or reset) state, then pause logic
+		pushSnapshot(store, false);
+		if (store.config.outputFormat == 'canvas') {
+			Canvas.drawGrid(store);
+			Canvas.drawPacman(store);
+			Canvas.drawGhosts(store);
+			Canvas.drawSoundController(store);
+		}
+		return;
+	}
+
 	store.frameCount++;
 
 	/* ---- FRAME-SKIP restored ---- */
@@ -168,14 +188,6 @@ const updateGame = async (store: StoreType, forceFinish = false) => {
 	}
 
 	/* -------- pacman timers -------- */
-	if (store.pacman.deadRemainingDuration > 0) {
-		store.pacman.deadRemainingDuration--;
-		if (store.pacman.deadRemainingDuration === 0) {
-			resetPacman(store);
-			placeGhosts(store);
-		}
-	}
-
 	if (store.pacman.powerupRemainingDuration > 0) {
 		store.pacman.powerupRemainingDuration--;
 		if (store.pacman.powerupRemainingDuration === 0) {
