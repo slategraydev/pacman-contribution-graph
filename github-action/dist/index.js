@@ -28185,11 +28185,11 @@ const generateAnimatedSVG = (store) => {
         svg += `<g id="intelligence-stats" font-size="14" fill="${textColor}">`;
         svg += `<text x="10" y="${textY}">GEN: ${intelligence.generation}</text>`;
         svg += `<text x="75" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
-        svg += `<text x="160" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
-        svg += `<text x="240" y="${textY}">RAD: ${dna.dangerRadius}</text>`;
-        svg += `<text x="315" y="${textY}">STUCK: ${dna.revisitPenalty}</text>`;
-        svg += `<text x="450" y="${textY}">HUNT: ${dna.scaredGhostWeight.toFixed(2)}</text>`;
-        svg += `<text x="570" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
+        svg += `<text x="165" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
+        svg += `<text x="260" y="${textY}">RAD: ${dna.dangerRadius.toFixed(2)}</text>`;
+        svg += `<text x="340" y="${textY}">STUCK: ${dna.revisitPenalty.toFixed(2)}</text>`;
+        svg += `<text x="480" y="${textY}">HUNT: ${dna.scaredGhostWeight.toFixed(2)}</text>`;
+        svg += `<text x="600" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(2)}</text>`;
         svg += `</g>`;
     }
     svg += '</svg>';
@@ -29095,7 +29095,6 @@ const buildWalls = () => {
     setWall(12, 3, 'right', WHITE);
     setWall(12, 4, 'right', WHITE);
     setWall(11, 2, 'down', WHITE);
-    setWall(12, 2, 'down', WHITE);
     // T
     setWall(15, 0, 'down', WHITE);
     setWall(16, 0, 'down', WHITE);
@@ -29136,7 +29135,7 @@ const buildWalls = () => {
     setWall(37, 0, 'down', WHITE);
     setWall(37, 1, 'right', WHITE);
     setWall(37, 2, 'down', WHITE);
-    setWall(36, 4, 'right', WHITE);
+    setWall(37, 3, 'right', WHITE);
     setWall(37, 4, 'right', WHITE);
     // A
     setWall(40, 0, 'down', WHITE);
@@ -29150,7 +29149,6 @@ const buildWalls = () => {
     setWall(41, 3, 'right', WHITE);
     setWall(41, 4, 'right', WHITE);
     setWall(40, 2, 'down', WHITE);
-    setWall(41, 2, 'down', WHITE);
     // Y
     setWall(43, 1, 'right', WHITE);
     setWall(43, 2, 'right', WHITE);

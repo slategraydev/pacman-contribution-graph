@@ -215,11 +215,11 @@ const generateAnimatedSVG = (store: StoreType) => {
 		svg += `<g id="intelligence-stats" font-size="14" fill="${textColor}">`;
 		svg += `<text x="10" y="${textY}">GEN: ${intelligence.generation}</text>`;
 		svg += `<text x="75" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
-		svg += `<text x="160" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
-		svg += `<text x="240" y="${textY}">RAD: ${dna.dangerRadius}</text>`;
-		svg += `<text x="315" y="${textY}">STUCK: ${dna.revisitPenalty}</text>`;
-		svg += `<text x="450" y="${textY}">HUNT: ${dna.scaredGhostWeight.toFixed(2)}</text>`;
-		svg += `<text x="570" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
+		svg += `<text x="165" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
+		svg += `<text x="260" y="${textY}">RAD: ${dna.dangerRadius.toFixed(2)}</text>`;
+		svg += `<text x="340" y="${textY}">STUCK: ${dna.revisitPenalty.toFixed(2)}</text>`;
+		svg += `<text x="480" y="${textY}">HUNT: ${dna.scaredGhostWeight.toFixed(2)}</text>`;
+		svg += `<text x="600" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(2)}</text>`;
 		svg += `</g>`;
 	}
 

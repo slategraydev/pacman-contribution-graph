@@ -40,7 +40,6 @@ const buildWalls = () => {
 	setWall(12, 3, 'right', WHITE);
 	setWall(12, 4, 'right', WHITE);
 	setWall(11, 2, 'down', WHITE);
-	setWall(12, 2, 'down', WHITE);
 
 	// T
 	setWall(15, 0, 'down', WHITE);
@@ -85,7 +84,7 @@ const buildWalls = () => {
 	setWall(37, 0, 'down', WHITE);
 	setWall(37, 1, 'right', WHITE);
 	setWall(37, 2, 'down', WHITE);
-	setWall(36, 4, 'right', WHITE);
+	setWall(37, 3, 'right', WHITE);
 	setWall(37, 4, 'right', WHITE);
 
 	// A
@@ -100,7 +99,6 @@ const buildWalls = () => {
 	setWall(41, 3, 'right', WHITE);
 	setWall(41, 4, 'right', WHITE);
 	setWall(40, 2, 'down', WHITE);
-	setWall(41, 2, 'down', WHITE);
 
 	// Y
 	setWall(43, 1, 'right', WHITE);
