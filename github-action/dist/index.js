@@ -28482,8 +28482,11 @@ const updateGame = async (store, forceFinish = false) => {
         store.pacman.powerupRemainingDuration--;
         if (store.pacman.powerupRemainingDuration === 0) {
             store.ghosts.forEach((g) => {
-                if (g.name !== 'eyes')
+                // ONLY revert ghosts that are actually scared.
+                // If they are 'eyes', they MUST continue to the house.
+                if (g.scared && g.name !== 'eyes') {
                     g.scared = false;
+                }
             });
             store.pacman.points = 0;
         }
