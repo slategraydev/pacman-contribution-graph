@@ -26,7 +26,8 @@ export class PacmanRenderer {
 			enableSounds: false,
 			pointsIncreasedCallback: (_: number) => {},
 			githubSettings: { accessToken: '' },
-			intelligence: undefined
+			intelligence: undefined,
+			runEvolution: true
 		};
 
 		// Reset the store on each call to start()

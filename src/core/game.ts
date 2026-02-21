@@ -110,7 +110,7 @@ const startGame = async (store: StoreType) => {
 	const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
 
 	// --- THE DAILY TOURNAMENT (Evolutionary Step) ---
-	if (store.config.outputFormat === 'svg' && remainingCells()) {
+	if (store.config.runEvolution && store.config.outputFormat === 'svg' && remainingCells()) {
 		const originalDNA = { ...store.config.intelligence.dna };
 
 		// Define Mutations

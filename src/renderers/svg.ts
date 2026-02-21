@@ -30,10 +30,16 @@ const generateAnimatedSVG = (store: StoreType) => {
 
 	// Month labels
 	let lastMonth = '';
+	let skipFirst = true;
 	for (let y = 0; y < GRID_WIDTH; y++) {
 		if (store.monthLabels[y] !== lastMonth) {
+			if (skipFirst) {
+				skipFirst = false;
+				lastMonth = store.monthLabels[y];
+				continue;
+			}
 			const xPos = y * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
-			svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="12" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
+			svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="15" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
 			lastMonth = store.monthLabels[y];
 		}
 	}
@@ -206,13 +212,13 @@ const generateAnimatedSVG = (store: StoreType) => {
 		const textColor = theme.textColor;
 		const textY = svgHeight - 12;
 
-		svg += `<g id="intelligence-stats" font-size="12" fill="${textColor}">`;
-		svg += `<text x="10" y="${textY}">GEN: ${intelligence.generation}</text>`;
-		svg += `<text x="75" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
-		svg += `<text x="160" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
+		svg += `<g id="intelligence-stats" font-size="15" fill="${textColor}">`;
+		svg += `<text x="0" y="${textY}">GEN: ${intelligence.generation}</text>`;
+		svg += `<text x="65" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
+		svg += `<text x="150" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
 		svg += `<text x="260" y="${textY}">RAD: ${dna.dangerRadius}</text>`;
 		svg += `<text x="320" y="${textY}">STUCK: ${dna.revisitPenalty}</text>`;
-		svg += `<text x="410" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
+		svg += `<text x="420" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
 		svg += `</g>`;
 	}
 

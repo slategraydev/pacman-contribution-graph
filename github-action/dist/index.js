@@ -28012,10 +28012,16 @@ const generateAnimatedSVG = (store) => {
     svg += generateGhostsPredefinition();
     // Month labels
     let lastMonth = '';
+    let skipFirst = true;
     for (let y = 0; y < GRID_WIDTH; y++) {
         if (store.monthLabels[y] !== lastMonth) {
+            if (skipFirst) {
+                skipFirst = false;
+                lastMonth = store.monthLabels[y];
+                continue;
+            }
             const xPos = y * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
-            svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="12" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
+            svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="15" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
             lastMonth = store.monthLabels[y];
         }
     }
@@ -28166,13 +28172,13 @@ const generateAnimatedSVG = (store) => {
         const dna = intelligence.dna;
         const textColor = theme.textColor;
         const textY = svgHeight - 12;
-        svg += `<g id="intelligence-stats" font-size="12" fill="${textColor}">`;
-        svg += `<text x="10" y="${textY}">GEN: ${intelligence.generation}</text>`;
-        svg += `<text x="75" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
-        svg += `<text x="160" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
+        svg += `<g id="intelligence-stats" font-size="15" fill="${textColor}">`;
+        svg += `<text x="0" y="${textY}">GEN: ${intelligence.generation}</text>`;
+        svg += `<text x="65" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
+        svg += `<text x="150" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
         svg += `<text x="260" y="${textY}">RAD: ${dna.dangerRadius}</text>`;
         svg += `<text x="320" y="${textY}">STUCK: ${dna.revisitPenalty}</text>`;
-        svg += `<text x="410" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
+        svg += `<text x="420" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
         svg += `</g>`;
     }
     svg += '</svg>';
@@ -28516,7 +28522,7 @@ const startGame = async (store) => {
     }
     const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
     // --- THE DAILY TOURNAMENT (Evolutionary Step) ---
-    if (store.config.outputFormat === 'svg' && remainingCells()) {
+    if (store.config.runEvolution && store.config.outputFormat === 'svg' && remainingCells()) {
         const originalDNA = { ...store.config.intelligence.dna };
         // Define Mutations
         const competitors = [
@@ -29052,7 +29058,8 @@ class src_PacmanRenderer {
             enableSounds: false,
             pointsIncreasedCallback: (_) => { },
             githubSettings: { accessToken: '' },
-            intelligence: undefined
+            intelligence: undefined,
+            runEvolution: true
         };
         // Reset the store on each call to start()
         this.store = JSON.parse(JSON.stringify(Store));
@@ -29133,7 +29140,7 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 		// TODO: Check active users
 		fetch('https://elec.abozanona.me/github-action-analytics.php?username=' + userName);
 
-		const generateWithIntelligence = async (theme) => {
+		const generateWithIntelligence = async (theme, runEvolution) => {
 			return new Promise((resolve) => {
 				let generatedSvg = '';
 				let updatedIntelligence = undefined;
@@ -29144,7 +29151,8 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 					outputFormat: 'svg',
 					gameSpeed: 1,
 					gameTheme: theme,
-					intelligence: intelligence, // Pass the loaded intelligence
+					intelligence: intelligence, // Pass the current intelligence
+					runEvolution: runEvolution, // Only evolve on the first run
 					githubSettings: { accessToken: githubToken },
 					svgCallback: (svg) => (generatedSvg = svg),
 					gameOverCallback: () => resolve({ svg: generatedSvg, intelligence: updatedIntelligence })
@@ -29157,17 +29165,17 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 			});
 		};
 
-		// Run for Light Theme
-		const lightResult = await generateWithIntelligence('github');
+		// Run for Light Theme (WITH evolution)
+		const lightResult = await generateWithIntelligence('github', true);
 		svgContent = lightResult.svg;
-		intelligence = lightResult.intelligence; // Update intelligence from the first run's evolution
+		intelligence = lightResult.intelligence; // Store the newly evolved intelligence
 
 		console.log(`💾 writing to dist/pacman-contribution-graph.svg`);
 		external_fs_.mkdirSync(external_path_.dirname('dist/pacman-contribution-graph.svg'), { recursive: true });
 		external_fs_.writeFileSync('dist/pacman-contribution-graph.svg', svgContent);
 
-		// Run for Dark Theme (reuse evolved intelligence)
-		const darkResult = await generateWithIntelligence('github-dark');
+		// Run for Dark Theme (WITHOUT further evolution, reuse lightResult's intelligence)
+		const darkResult = await generateWithIntelligence('github-dark', false);
 		svgContent = darkResult.svg;
 
 		console.log(`💾 writing to dist/pacman-contribution-graph-dark.svg`);

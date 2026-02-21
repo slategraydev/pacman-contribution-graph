@@ -94,6 +94,7 @@ export interface Config {
     maxFrames?: number;
     maxHistorySize?: number;
     intelligence?: Intelligence;
+    runEvolution?: boolean;
 }
 export type ThemeKeys = 'github' | 'github-dark' | 'gitlab' | 'gitlab-dark';
 export interface GameTheme {

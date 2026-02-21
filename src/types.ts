@@ -108,6 +108,7 @@ export interface Config {
 	maxFrames?: number; // Maximum frame rate for the game
 	maxHistorySize?: number;
 	intelligence?: Intelligence;
+	runEvolution?: boolean;
 }
 
 /* ───────────────────────── Themes ──────────────────────────────────── */

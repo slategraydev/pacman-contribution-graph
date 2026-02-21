@@ -50,7 +50,7 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 		// TODO: Check active users
 		fetch('https://elec.abozanona.me/github-action-analytics.php?username=' + userName);
 
-		const generateWithIntelligence = async (theme) => {
+		const generateWithIntelligence = async (theme, runEvolution) => {
 			return new Promise((resolve) => {
 				let generatedSvg = '';
 				let updatedIntelligence = undefined;
@@ -61,7 +61,8 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 					outputFormat: 'svg',
 					gameSpeed: 1,
 					gameTheme: theme,
-					intelligence: intelligence, // Pass the loaded intelligence
+					intelligence: intelligence, // Pass the current intelligence
+					runEvolution: runEvolution, // Only evolve on the first run
 					githubSettings: { accessToken: githubToken },
 					svgCallback: (svg) => (generatedSvg = svg),
 					gameOverCallback: () => resolve({ svg: generatedSvg, intelligence: updatedIntelligence })
@@ -74,17 +75,17 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 			});
 		};
 
-		// Run for Light Theme
-		const lightResult = await generateWithIntelligence('github');
+		// Run for Light Theme (WITH evolution)
+		const lightResult = await generateWithIntelligence('github', true);
 		svgContent = lightResult.svg;
-		intelligence = lightResult.intelligence; // Update intelligence from the first run's evolution
+		intelligence = lightResult.intelligence; // Store the newly evolved intelligence
 
 		console.log(`💾 writing to dist/pacman-contribution-graph.svg`);
 		fs.mkdirSync(path.dirname('dist/pacman-contribution-graph.svg'), { recursive: true });
 		fs.writeFileSync('dist/pacman-contribution-graph.svg', svgContent);
 
-		// Run for Dark Theme (reuse evolved intelligence)
-		const darkResult = await generateWithIntelligence('github-dark');
+		// Run for Dark Theme (WITHOUT further evolution, reuse lightResult's intelligence)
+		const darkResult = await generateWithIntelligence('github-dark', false);
 		svgContent = darkResult.svg;
 
 		console.log(`💾 writing to dist/pacman-contribution-graph-dark.svg`);
