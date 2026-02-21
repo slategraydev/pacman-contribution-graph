@@ -27202,10 +27202,10 @@ const updateGameMode = (store) => {
     }
 };
 const moveGhostInHouse = (ghost, store) => {
-    // If the ghost is in the middle of being released, it moves towards the door (x=26, y=2)
+    // If the ghost is in the middle of being released, it moves towards the door (x=27, y=3)
     if (ghost.justReleasedFromHouse) {
-        if (ghost.x === 26) {
-            if (ghost.y > 2) {
+        if (ghost.x === 27) {
+            if (ghost.y > 3) {
                 ghost.y -= 1;
                 ghost.direction = 'up';
             }
@@ -27215,7 +27215,8 @@ const moveGhostInHouse = (ghost, store) => {
             }
         }
         else {
-            ghost.x < 26 ? ((ghost.x += 1), (ghost.direction = 'right')) : ((ghost.x -= 1), (ghost.direction = 'left'));
+            // Move horizontally towards the center column (27)
+            ghost.x < 27 ? ((ghost.x += 1), (ghost.direction = 'right')) : ((ghost.x -= 1), (ghost.direction = 'left'));
         }
         return;
     }
@@ -27224,35 +27225,34 @@ const moveGhostInHouse = (ghost, store) => {
         if (ghost.respawnCounter === 0 && ghost.originalName) {
             ghost.name = ghost.originalName;
             ghost.inHouse = true; // Stay in house to bob until released by timer
-            ghost.respawning = false; // Custom flag to handle state
+            ghost.respawning = false;
         }
         return;
     }
-    // Arcade Feature: Vertical Bobbing
-    // Ghosts move up and down between y=3 and y=4 while waiting.
-    const topLimit = 3;
-    const bottomLimit = 4;
+    // Arcade Feature: 1-grid vertical bobbing (between y=4 and y=5)
+    const topLimit = 4;
+    const bottomLimit = 5;
     if (ghost.direction === 'up') {
         if (ghost.y <= topLimit) {
             ghost.direction = 'down';
-            ghost.y += 1;
+            ghost.y = bottomLimit;
         }
         else {
-            ghost.y -= 1;
+            ghost.y = topLimit;
         }
     }
     else {
         if (ghost.y >= bottomLimit) {
             ghost.direction = 'up';
-            ghost.y -= 1;
+            ghost.y = topLimit;
         }
         else {
-            ghost.y += 1;
+            ghost.y = bottomLimit;
         }
     }
 };
 const moveEyesToHome = (ghost, store) => {
-    const home = { x: 26, y: 3 };
+    const home = { x: 27, y: 4 };
     if (Math.abs(ghost.x - home.x) <= 1 && Math.abs(ghost.y - home.y) <= 1) {
         ghost.x = home.x;
         ghost.y = home.y;
@@ -28086,9 +28086,9 @@ const generateAnimatedSVG = (store) => {
     }
     // Pacman
     const pacmanColorAnimation = generateChangingValuesAnimation(store, store.gameHistory.map((el) => RendererUnits.generatePacManColors(el.pacman)), true);
-    const pacmanPositionAnimation = generateChangingValuesAnimation(store, generatePacManPositions(store), true);
+    const pacmanPositionAnimation = generateChangingValuesAnimation(store, generatePacManPositions(store), false);
     const pacmanRotationAnimation = generateChangingValuesAnimation(store, generatePacManRotations(store), true);
-    svg += `<path id="pacman" d="${generatePacManPath(0.55)}" fill="${PACMAN_COLOR}">
+    svg += `<path id="pacman" d="${generatePacManPath(0.75)}" fill="${PACMAN_COLOR}">
 		<animate attributeName="fill" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanColorAnimation.keyTimes}"
 			values="${pacmanColorAnimation.values}"
@@ -28096,7 +28096,6 @@ const generateAnimatedSVG = (store) => {
 		<animateTransform attributeName="transform" type="translate" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanPositionAnimation.keyTimes}"
 			values="${pacmanPositionAnimation.values}"
-			calcMode="discrete"
 			additive="sum"/>
 		<animateTransform attributeName="transform" type="rotate" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanRotationAnimation.keyTimes}"
@@ -28110,14 +28109,13 @@ const generateAnimatedSVG = (store) => {
     // Process each ghost separately
     store.ghosts.forEach((ghost, index) => {
         // Generate position animation for this ghost
-        const ghostPositionAnimation = generateChangingValuesAnimation(store, generateGhostPositions(store, index), true);
+        const ghostPositionAnimation = generateChangingValuesAnimation(store, generateGhostPositions(store, index), false);
         // Create a group for the ghost
         svg += `<g id="ghost${index}" transform="translate(0,0)">
 			<animateTransform attributeName="transform" type="translate"
 				dur="${totalDurationMs}ms" repeatCount="indefinite"
 				keyTimes="${ghostPositionAnimation.keyTimes}"
 				values="${ghostPositionAnimation.values}"
-				calcMode="discrete"
 				additive="replace"/>`;
         // Map all possible state + direction combinations for this ghost
         const stateChanges = mapGhostStateChanges(store, index);
@@ -28398,8 +28396,8 @@ const placePacman = (store) => {
 const placeGhosts = (store) => {
     store.ghosts = [
         {
-            x: 26,
-            y: 2,
+            x: 27,
+            y: 3,
             name: 'blinky',
             direction: 'left',
             scared: false,
@@ -28411,38 +28409,38 @@ const placeGhosts = (store) => {
         },
         {
             x: 26,
-            y: 3,
+            y: 5,
             name: 'pinky',
-            direction: 'down',
-            scared: false,
-            target: undefined,
-            inHouse: true,
-            respawnCounter: 0,
-            freezeCounter: 1,
-            justReleasedFromHouse: false
-        },
-        {
-            x: 25,
-            y: 3,
-            name: 'inky',
             direction: 'up',
             scared: false,
             target: undefined,
             inHouse: true,
             respawnCounter: 0,
-            freezeCounter: 30,
+            freezeCounter: 10,
             justReleasedFromHouse: false
         },
         {
             x: 27,
-            y: 3,
+            y: 5,
+            name: 'inky',
+            direction: 'down',
+            scared: false,
+            target: undefined,
+            inHouse: true,
+            respawnCounter: 0,
+            freezeCounter: 60,
+            justReleasedFromHouse: false
+        },
+        {
+            x: 28,
+            y: 5,
             name: 'clyde',
             direction: 'up',
             scared: false,
             target: undefined,
             inHouse: true,
             respawnCounter: 0,
-            freezeCounter: 60,
+            freezeCounter: 120,
             justReleasedFromHouse: false
         }
     ];
@@ -28668,8 +28666,7 @@ const releaseGhostFromHouse = (store, name) => {
     const ghost = store.ghosts.find((g) => g.name === name && g.inHouse);
     if (ghost) {
         ghost.justReleasedFromHouse = true;
-        ghost.y = 2;
-        ghost.direction = 'up';
+        // The ghost will move towards x=27, y=3 in moveGhostInHouse
     }
 };
 const Game = {

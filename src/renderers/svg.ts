@@ -99,9 +99,9 @@ const generateAnimatedSVG = (store: StoreType) => {
 		store.gameHistory.map((el) => RendererUnits.generatePacManColors(el.pacman)),
 		true
 	);
-	const pacmanPositionAnimation = generateChangingValuesAnimation(store, generatePacManPositions(store), true);
+	const pacmanPositionAnimation = generateChangingValuesAnimation(store, generatePacManPositions(store), false);
 	const pacmanRotationAnimation = generateChangingValuesAnimation(store, generatePacManRotations(store), true);
-	svg += `<path id="pacman" d="${generatePacManPath(0.55)}" fill="${PACMAN_COLOR}">
+	svg += `<path id="pacman" d="${generatePacManPath(0.75)}" fill="${PACMAN_COLOR}">
 		<animate attributeName="fill" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanColorAnimation.keyTimes}"
 			values="${pacmanColorAnimation.values}"
@@ -109,7 +109,6 @@ const generateAnimatedSVG = (store: StoreType) => {
 		<animateTransform attributeName="transform" type="translate" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanPositionAnimation.keyTimes}"
 			values="${pacmanPositionAnimation.values}"
-			calcMode="discrete"
 			additive="sum"/>
 		<animateTransform attributeName="transform" type="rotate" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanRotationAnimation.keyTimes}"
@@ -124,7 +123,7 @@ const generateAnimatedSVG = (store: StoreType) => {
 	// Process each ghost separately
 	store.ghosts.forEach((ghost, index) => {
 		// Generate position animation for this ghost
-		const ghostPositionAnimation = generateChangingValuesAnimation(store, generateGhostPositions(store, index), true);
+		const ghostPositionAnimation = generateChangingValuesAnimation(store, generateGhostPositions(store, index), false);
 
 		// Create a group for the ghost
 		svg += `<g id="ghost${index}" transform="translate(0,0)">
@@ -132,9 +131,7 @@ const generateAnimatedSVG = (store: StoreType) => {
 				dur="${totalDurationMs}ms" repeatCount="indefinite"
 				keyTimes="${ghostPositionAnimation.keyTimes}"
 				values="${ghostPositionAnimation.values}"
-				calcMode="discrete"
 				additive="replace"/>`;
-
 		// Map all possible state + direction combinations for this ghost
 		const stateChanges = mapGhostStateChanges(store, index);
 

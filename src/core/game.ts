@@ -26,8 +26,8 @@ const placePacman = (store: StoreType) => {
 const placeGhosts = (store: StoreType) => {
 	store.ghosts = [
 		{
-			x: 26,
-			y: 2, // Blinky starts OUTSIDE the house in arcade
+			x: 27,
+			y: 3, // Blinky starts OUTSIDE the house
 			name: 'blinky',
 			direction: 'left',
 			scared: false,
@@ -39,38 +39,38 @@ const placeGhosts = (store: StoreType) => {
 		},
 		{
 			x: 26,
-			y: 3,
+			y: 5,
 			name: 'pinky',
-			direction: 'down',
-			scared: false,
-			target: undefined,
-			inHouse: true,
-			respawnCounter: 0,
-			freezeCounter: 1, // Pinky leaves immediately
-			justReleasedFromHouse: false
-		},
-		{
-			x: 25,
-			y: 3,
-			name: 'inky',
 			direction: 'up',
 			scared: false,
 			target: undefined,
 			inHouse: true,
 			respawnCounter: 0,
-			freezeCounter: 30, // Inky waits
+			freezeCounter: 10, // Increased wait
 			justReleasedFromHouse: false
 		},
 		{
 			x: 27,
-			y: 3,
+			y: 5,
+			name: 'inky',
+			direction: 'down',
+			scared: false,
+			target: undefined,
+			inHouse: true,
+			respawnCounter: 0,
+			freezeCounter: 60, // Much longer wait
+			justReleasedFromHouse: false
+		},
+		{
+			x: 28,
+			y: 5,
 			name: 'clyde',
 			direction: 'up',
 			scared: false,
 			target: undefined,
 			inHouse: true,
 			respawnCounter: 0,
-			freezeCounter: 60, // Clyde waits longest
+			freezeCounter: 120, // Longest wait
 			justReleasedFromHouse: false
 		}
 	];
@@ -323,8 +323,7 @@ const releaseGhostFromHouse = (store: StoreType, name: GhostName) => {
 	const ghost = store.ghosts.find((g) => g.name === name && g.inHouse);
 	if (ghost) {
 		ghost.justReleasedFromHouse = true;
-		ghost.y = 2;
-		ghost.direction = 'up';
+		// The ghost will move towards x=27, y=3 in moveGhostInHouse
 	}
 };
 

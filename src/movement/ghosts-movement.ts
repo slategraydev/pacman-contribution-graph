@@ -169,10 +169,10 @@ const updateGameMode = (store: StoreType) => {
 };
 
 const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
-	// If the ghost is in the middle of being released, it moves towards the door (x=26, y=2)
+	// If the ghost is in the middle of being released, it moves towards the door (x=27, y=3)
 	if (ghost.justReleasedFromHouse) {
-		if (ghost.x === 26) {
-			if (ghost.y > 2) {
+		if (ghost.x === 27) {
+			if (ghost.y > 3) {
 				ghost.y -= 1;
 				ghost.direction = 'up';
 			} else {
@@ -180,7 +180,8 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 				ghost.justReleasedFromHouse = false;
 			}
 		} else {
-			ghost.x < 26 ? ((ghost.x += 1), (ghost.direction = 'right')) : ((ghost.x -= 1), (ghost.direction = 'left'));
+			// Move horizontally towards the center column (27)
+			ghost.x < 27 ? ((ghost.x += 1), (ghost.direction = 'right')) : ((ghost.x -= 1), (ghost.direction = 'left'));
 		}
 		return;
 	}
@@ -190,35 +191,34 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 		if (ghost.respawnCounter === 0 && ghost.originalName) {
 			ghost.name = ghost.originalName;
 			ghost.inHouse = true; // Stay in house to bob until released by timer
-			ghost.respawning = false; // Custom flag to handle state
+			ghost.respawning = false;
 		}
 		return;
 	}
 
-	// Arcade Feature: Vertical Bobbing
-	// Ghosts move up and down between y=3 and y=4 while waiting.
-	const topLimit = 3;
-	const bottomLimit = 4;
+	// Arcade Feature: 1-grid vertical bobbing (between y=4 and y=5)
+	const topLimit = 4;
+	const bottomLimit = 5;
 
 	if (ghost.direction === 'up') {
 		if (ghost.y <= topLimit) {
 			ghost.direction = 'down';
-			ghost.y += 1;
+			ghost.y = bottomLimit;
 		} else {
-			ghost.y -= 1;
+			ghost.y = topLimit;
 		}
 	} else {
 		if (ghost.y >= bottomLimit) {
 			ghost.direction = 'up';
-			ghost.y -= 1;
+			ghost.y = topLimit;
 		} else {
-			ghost.y += 1;
+			ghost.y = bottomLimit;
 		}
 	}
 };
 
 const moveEyesToHome = (ghost: Ghost, store: StoreType) => {
-	const home = { x: 26, y: 3 };
+	const home = { x: 27, y: 4 };
 	if (Math.abs(ghost.x - home.x) <= 1 && Math.abs(ghost.y - home.y) <= 1) {
 		ghost.x = home.x;
 		ghost.y = home.y;
