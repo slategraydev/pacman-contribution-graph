@@ -108,7 +108,7 @@ To showcase the Pac-Man game on your GitHub profile, follow these steps:
 
             steps:
               - name: generate pacman-contribution-graph.svg
-                uses: abozanona/pacman-contribution-graph@main
+                uses: slategraydev/pacman-contribution-graph@main
                 with:
                   github_user_name: ${{ github.repository_owner }}
 
