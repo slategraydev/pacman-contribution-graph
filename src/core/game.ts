@@ -18,6 +18,7 @@ const placePacman = (store: StoreType) => {
 		totalPoints: 0,
 		deadRemainingDuration: 0,
 		powerupRemainingDuration: 0,
+		pauseFrames: 0,
 		recentPositions: []
 	};
 };
@@ -26,7 +27,7 @@ const placeGhosts = (store: StoreType) => {
 	store.ghosts = [
 		{
 			x: 26,
-			y: 2,
+			y: 2, // Blinky starts OUTSIDE the house in arcade
 			name: 'blinky',
 			direction: 'left',
 			scared: false,
@@ -34,18 +35,6 @@ const placeGhosts = (store: StoreType) => {
 			inHouse: false,
 			respawnCounter: 0,
 			freezeCounter: 0,
-			justReleasedFromHouse: false
-		},
-		{
-			x: 25,
-			y: 3,
-			name: 'inky',
-			direction: 'up',
-			scared: false,
-			target: undefined,
-			inHouse: true,
-			respawnCounter: 0,
-			freezeCounter: 10,
 			justReleasedFromHouse: false
 		},
 		{
@@ -57,7 +46,19 @@ const placeGhosts = (store: StoreType) => {
 			target: undefined,
 			inHouse: true,
 			respawnCounter: 0,
-			freezeCounter: 20,
+			freezeCounter: 1, // Pinky leaves immediately
+			justReleasedFromHouse: false
+		},
+		{
+			x: 25,
+			y: 3,
+			name: 'inky',
+			direction: 'up',
+			scared: false,
+			target: undefined,
+			inHouse: true,
+			respawnCounter: 0,
+			freezeCounter: 30, // Inky waits
 			justReleasedFromHouse: false
 		},
 		{
@@ -69,7 +70,7 @@ const placeGhosts = (store: StoreType) => {
 			target: undefined,
 			inHouse: true,
 			respawnCounter: 0,
-			freezeCounter: 30,
+			freezeCounter: 60, // Clyde waits longest
 			justReleasedFromHouse: false
 		}
 	];

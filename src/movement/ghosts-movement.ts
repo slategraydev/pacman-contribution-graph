@@ -27,15 +27,12 @@ const moveGhosts = (store: StoreType) => {
 			continue;
 		}
 
-		// Eyes always use expert pathfinding home
+		let target: Point2d;
+
 		if (ghost.name === 'eyes') {
 			moveEyesToHome(ghost, store);
 			continue;
-		}
-
-		let target: Point2d;
-
-		if (ghost.scared) {
+		} else if (ghost.scared) {
 			// When scared, target the scatter corner (arcade-like "fleeing")
 			target = SCATTER_CORNERS[ghost.name] || SCATTER_CORNERS['blinky'];
 		} else if (currentMode === 'scatter') {
@@ -46,9 +43,19 @@ const moveGhosts = (store: StoreType) => {
 
 		ghost.target = target;
 
+		// Arcade Feature: Ghosts move slightly slower than Pac-Man (approx 95% speed).
+		// We simulate this by having them skip a move every 20 frames.
+		if (store.frameCount % 20 === 0 && !ghost.justReleasedFromHouse) {
+			continue;
+		}
+
+		// Arcade Feature: Scared ghosts move much slower (approx 60% speed).
+		if (ghost.scared && store.frameCount % 3 === 0) {
+			continue;
+		}
 		// Use Arcade-style Target-Tile logic: Pick the move that results in the shortest
 		// straight-line distance to the target, and NEVER reverse direction.
-		const nextMove = getTargetTileMove(ghost, target);
+		const nextMove = getTargetTileMove(ghost, target, store);
 
 		if (nextMove) {
 			ghost.x = nextMove.x;
@@ -58,10 +65,9 @@ const moveGhosts = (store: StoreType) => {
 	}
 };
 
-const getTargetTileMove = (ghost: Ghost, target: Point2d) => {
+const getTargetTileMove = (ghost: Ghost, target: Point2d, store: StoreType) => {
 	const validMoves = MovementUtils.getValidMoves(ghost.x, ghost.y);
 
-	// Classic Rule: Ghosts cannot reverse direction unless mode changes
 	const filteredMoves = validMoves.filter(([dx, dy]) => {
 		if (ghost.direction === 'up' && dy > 0) return false;
 		if (ghost.direction === 'down' && dy < 0) return false;
@@ -73,27 +79,48 @@ const getTargetTileMove = (ghost: Ghost, target: Point2d) => {
 	const movesToEvaluate = filteredMoves.length > 0 ? filteredMoves : validMoves;
 
 	let bestMove = null;
+
+	if (ghost.scared) {
+		// VERY SCARED: Calculate distance to Pac-Man for each move and pick the one that
+		// results in the MAXIMUM distance from him.
+		let maxDistFromPacman = -Infinity;
+		for (const [dx, dy] of movesToEvaluate) {
+			const nx = ghost.x + dx;
+			const ny = ghost.y + dy;
+			const dist = Math.sqrt(Math.pow(store.pacman.x - nx, 2) + Math.pow(store.pacman.y - ny, 2));
+			if (dist > maxDistFromPacman) {
+				maxDistFromPacman = dist;
+				bestMove = { x: nx, y: ny, direction: getDirectionFromDelta(dx, dy) };
+			}
+		}
+		return bestMove;
+	}
+
+	// ULTRA AGGRESSIVE: For Blinky and Pinky, look 2 steps ahead to pick the best path
+	const isStalker = ghost.name === 'blinky' || ghost.name === 'pinky';
 	let minDistance = Infinity;
 
 	for (const [dx, dy] of movesToEvaluate) {
 		const nx = ghost.x + dx;
 		const ny = ghost.y + dy;
 
-		// Pythagorean distance to target
-		const dist = Math.sqrt(Math.pow(target.x - nx, 2) + Math.pow(target.y - ny, 2));
+		// If aggressive, consider the distance after another potential move
+		let weight = Math.sqrt(Math.pow(target.x - nx, 2) + Math.pow(target.y - ny, 2));
 
-		// Scared ghosts have a 50% chance to pick a random valid move instead of optimal
-		if (ghost.scared && Math.random() < 0.5) {
-			const randomMove = movesToEvaluate[Math.floor(Math.random() * movesToEvaluate.length)];
-			return {
-				x: ghost.x + randomMove[0],
-				y: ghost.y + randomMove[1],
-				direction: getDirectionFromDelta(randomMove[0], randomMove[1])
-			};
+		if (isStalker) {
+			// Lookahead bonus: check if this move opens up even better paths
+			const nextValid = MovementUtils.getValidMoves(nx, ny);
+			let nextMin = Infinity;
+			for (const [ndx, ndy] of nextValid) {
+				const nnx = nx + ndx;
+				const nny = ny + ndy;
+				nextMin = Math.min(nextMin, Math.sqrt(Math.pow(target.x - nnx, 2) + Math.pow(target.y - nny, 2)));
+			}
+			weight = (weight + nextMin) / 2;
 		}
 
-		if (dist < minDistance) {
-			minDistance = dist;
+		if (weight < minDistance) {
+			minDistance = weight;
 			bestMove = {
 				x: nx,
 				y: ny,
@@ -142,12 +169,16 @@ const updateGameMode = (store: StoreType) => {
 };
 
 const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
+	// If the ghost is in the middle of being released, it moves towards the door (x=26, y=2)
 	if (ghost.justReleasedFromHouse) {
 		if (ghost.x === 26) {
-			ghost.y = 2;
-			ghost.direction = 'up';
-			ghost.inHouse = false;
-			ghost.justReleasedFromHouse = false;
+			if (ghost.y > 2) {
+				ghost.y -= 1;
+				ghost.direction = 'up';
+			} else {
+				ghost.inHouse = false;
+				ghost.justReleasedFromHouse = false;
+			}
 		} else {
 			ghost.x < 26 ? ((ghost.x += 1), (ghost.direction = 'right')) : ((ghost.x -= 1), (ghost.direction = 'left'));
 		}
@@ -158,16 +189,32 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 		ghost.respawnCounter--;
 		if (ghost.respawnCounter === 0 && ghost.originalName) {
 			ghost.name = ghost.originalName;
-			ghost.inHouse = false;
-			ghost.scared = store.pacman.powerupRemainingDuration > 0;
+			ghost.inHouse = true; // Stay in house to bob until released by timer
+			ghost.respawning = false; // Custom flag to handle state
 		}
 		return;
 	}
 
-	// Simple bounce logic in house
-	if (ghost.direction === 'up' && ghost.y <= 3) ghost.direction = 'down';
-	else if (ghost.direction === 'down' && ghost.y >= 3) ghost.direction = 'up';
-	ghost.y += ghost.direction === 'up' ? -1 : 1;
+	// Arcade Feature: Vertical Bobbing
+	// Ghosts move up and down between y=3 and y=4 while waiting.
+	const topLimit = 3;
+	const bottomLimit = 4;
+
+	if (ghost.direction === 'up') {
+		if (ghost.y <= topLimit) {
+			ghost.direction = 'down';
+			ghost.y += 1;
+		} else {
+			ghost.y -= 1;
+		}
+	} else {
+		if (ghost.y >= bottomLimit) {
+			ghost.direction = 'up';
+			ghost.y -= 1;
+		} else {
+			ghost.y += 1;
+		}
+	}
 };
 
 const moveEyesToHome = (ghost: Ghost, store: StoreType) => {

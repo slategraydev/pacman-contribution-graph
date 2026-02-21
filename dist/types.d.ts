@@ -23,6 +23,7 @@ export interface Pacman {
     totalPoints: number;
     deadRemainingDuration: number;
     powerupRemainingDuration: number;
+    pauseFrames: number;
     recentPositions: string[];
     target?: Point2d;
 }
@@ -36,6 +37,7 @@ export interface Ghost {
     direction: 'right' | 'left' | 'up' | 'down';
     target?: Point2d;
     inHouse: boolean;
+    respawning?: boolean;
     respawnCounter: number;
     freezeCounter: number;
     justReleasedFromHouse: boolean;

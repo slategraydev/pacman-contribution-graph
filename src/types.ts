@@ -28,6 +28,7 @@ export interface Pacman {
 	totalPoints: number;
 	deadRemainingDuration: number;
 	powerupRemainingDuration: number;
+	pauseFrames: number; // For arcade-accurate pause when eating
 	recentPositions: string[];
 	target?: Point2d;
 }
@@ -43,6 +44,7 @@ export interface Ghost {
 	direction: 'right' | 'left' | 'up' | 'down';
 	target?: Point2d;
 	inHouse: boolean;
+	respawning?: boolean; // Whether the ghost is in 'eyes' mode returning home
 	respawnCounter: number; // Time to respawn after reaches home
 	freezeCounter: number; // Time ghost stays in base before going out
 	justReleasedFromHouse: boolean; // If ghost just released from house, it can only walk thru the house door
