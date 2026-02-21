@@ -27993,8 +27993,8 @@ const SVG_KEY_TIMES_PRECISION = 4;
 const generateAnimatedSVG = (store) => {
     // Dimensions and duration
     const svgWidth = GRID_WIDTH * (CELL_SIZE + GAP_SIZE);
-    const topMargin = 15;
-    const bottomMargin = 25;
+    const topMargin = 30;
+    const bottomMargin = 30;
     const svgHeight = GRID_HEIGHT * (CELL_SIZE + GAP_SIZE) + topMargin + bottomMargin;
     const totalDurationMs = store.gameHistory.length * DELTA_TIME;
     // Basic SVG structure
@@ -28015,7 +28015,7 @@ const generateAnimatedSVG = (store) => {
     for (let y = 0; y < GRID_WIDTH; y++) {
         if (store.monthLabels[y] !== lastMonth) {
             const xPos = y * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
-            svg += `<text x="${xPos}" y="10" text-anchor="middle" font-size="10" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
+            svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="12" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
             lastMonth = store.monthLabels[y];
         }
     }
@@ -28023,7 +28023,7 @@ const generateAnimatedSVG = (store) => {
     for (let x = 0; x < GRID_WIDTH; x++) {
         for (let y = 0; y < GRID_HEIGHT; y++) {
             const cellX = x * (CELL_SIZE + GAP_SIZE);
-            const cellY = y * (CELL_SIZE + GAP_SIZE) + 15;
+            const cellY = y * (CELL_SIZE + GAP_SIZE) + 30;
             const initialColor = store.gameHistory[0].grid[x][y].color;
             // Check if this cell EVER changes color in the history
             const hasColorChanges = store.gameHistory.some((state) => state.grid[x][y].color !== initialColor);
@@ -28057,14 +28057,14 @@ const generateAnimatedSVG = (store) => {
                 // Color changed, end current run and start new one
                 if (runStart !== null) {
                     let length = x - runStart;
-                    svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${runColor}"></rect>`;
+                    svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 30}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${runColor}"></rect>`;
                 }
                 runStart = x;
                 runColor = currentColor;
             }
             if ((!active || x === GRID_WIDTH) && runStart !== null) {
                 let length = x - runStart;
-                svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${runColor}"></rect>`;
+                svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 30}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${runColor}"></rect>`;
                 runStart = null;
                 runColor = null;
             }
@@ -28085,14 +28085,14 @@ const generateAnimatedSVG = (store) => {
                 // Color changed, end current run and start new one
                 if (runStart !== null) {
                     let length = y - runStart;
-                    svg += `<rect id="wv-${x}-${runStart}" x="${x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${GAP_SIZE}" height="${length * (CELL_SIZE + GAP_SIZE)}" fill="${runColor}"></rect>`;
+                    svg += `<rect id="wv-${x}-${runStart}" x="${x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 30}" width="${GAP_SIZE}" height="${length * (CELL_SIZE + GAP_SIZE)}" fill="${runColor}"></rect>`;
                 }
                 runStart = y;
                 runColor = currentColor;
             }
             if ((!active || y === GRID_HEIGHT) && runStart !== null) {
                 let length = y - runStart;
-                svg += `<rect id="wv-${x}-${runStart}" x="${x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${GAP_SIZE}" height="${length * (CELL_SIZE + GAP_SIZE)}" fill="${runColor}"></rect>`;
+                svg += `<rect id="wv-${x}-${runStart}" x="${x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 30}" width="${GAP_SIZE}" height="${length * (CELL_SIZE + GAP_SIZE)}" fill="${runColor}"></rect>`;
                 runStart = null;
                 runColor = null;
             }
@@ -28165,13 +28165,14 @@ const generateAnimatedSVG = (store) => {
         const theme = Utils.getCurrentTheme(store);
         const dna = intelligence.dna;
         const textColor = theme.textColor;
-        const textY = svgHeight - 10;
-        svg += `<g id="intelligence-stats" font-size="10" fill="${textColor}">`;
+        const textY = svgHeight - 12;
+        svg += `<g id="intelligence-stats" font-size="12" fill="${textColor}">`;
         svg += `<text x="10" y="${textY}">GEN: ${intelligence.generation}</text>`;
-        svg += `<text x="70" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
-        svg += `<text x="140" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
-        svg += `<text x="210" y="${textY}">RAD: ${dna.dangerRadius}</text>`;
-        svg += `<text x="${svgWidth - 10}" y="${textY}" text-anchor="end">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
+        svg += `<text x="75" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
+        svg += `<text x="160" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
+        svg += `<text x="260" y="${textY}">RAD: ${dna.dangerRadius}</text>`;
+        svg += `<text x="320" y="${textY}">STUCK: ${dna.revisitPenalty}</text>`;
+        svg += `<text x="410" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
         svg += `</g>`;
     }
     svg += '</svg>';
@@ -28283,7 +28284,7 @@ const generatePacManPath = (mouthAngle) => {
 const generatePacManPositions = (store) => {
     return store.gameHistory.map((state) => {
         const x = state.pacman.x * (CELL_SIZE + GAP_SIZE);
-        const y = state.pacman.y * (CELL_SIZE + GAP_SIZE) + 15;
+        const y = state.pacman.y * (CELL_SIZE + GAP_SIZE) + 30;
         return `${x},${y}`;
     });
 };
@@ -28314,7 +28315,7 @@ const generateGhostPositions = (store, ghostIndex) => {
         }
         const ghost = state.ghosts[ghostIndex];
         const x = ghost.x * (CELL_SIZE + GAP_SIZE);
-        const y = ghost.y * (CELL_SIZE + GAP_SIZE) + 15;
+        const y = ghost.y * (CELL_SIZE + GAP_SIZE) + 30;
         return `${x},${y}`;
     });
 };
