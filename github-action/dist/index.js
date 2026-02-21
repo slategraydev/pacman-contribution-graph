@@ -28182,14 +28182,17 @@ const generateAnimatedSVG = (store) => {
         const dna = intelligence.dna;
         const textColor = theme.textColor;
         const textY = svgHeight - 12;
+        // Spacing calculation: Divide the width into 7 equal slots
+        const colWidth = (svgWidth - 20) / 7;
+        const getX = (index) => 10 + index * colWidth;
         svg += `<g id="intelligence-stats" font-size="14" fill="${textColor}">`;
-        svg += `<text x="10" y="${textY}">GEN: ${intelligence.generation}</text>`;
-        svg += `<text x="75" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
-        svg += `<text x="165" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
-        svg += `<text x="260" y="${textY}">RAD: ${dna.dangerRadius.toFixed(2)}</text>`;
-        svg += `<text x="340" y="${textY}">STUCK: ${dna.revisitPenalty.toFixed(2)}</text>`;
-        svg += `<text x="480" y="${textY}">HUNT: ${dna.scaredGhostWeight.toFixed(2)}</text>`;
-        svg += `<text x="600" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(2)}</text>`;
+        svg += `<text x="${getX(0)}" y="${textY}">GEN: ${intelligence.generation}</text>`;
+        svg += `<text x="${getX(1)}" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
+        svg += `<text x="${getX(2)}" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
+        svg += `<text x="${getX(3)}" y="${textY}">RAD: ${dna.dangerRadius.toFixed(2)}</text>`;
+        svg += `<text x="${getX(4)}" y="${textY}">STUCK: ${dna.revisitPenalty.toFixed(2)}</text>`;
+        svg += `<text x="${getX(5)}" y="${textY}">HUNT: ${dna.scaredGhostWeight.toFixed(2)}</text>`;
+        svg += `<text x="${getX(6)}" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(2)}</text>`;
         svg += `</g>`;
     }
     svg += '</svg>';
@@ -28534,6 +28537,11 @@ const startGame = async (store) => {
             dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 },
             lastFitness: 0
         };
+    }
+    else {
+        // DNA Migration: Ensure all fields exist if loading from an older version
+        const defaultDNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
+        store.config.intelligence.dna = { ...defaultDNA, ...store.config.intelligence.dna };
     }
     const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
     // --- THE DAILY TOURNAMENT (Evolutionary Step) ---

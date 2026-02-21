@@ -110,6 +110,10 @@ const startGame = async (store: StoreType) => {
 			dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 },
 			lastFitness: 0
 		};
+	} else {
+		// DNA Migration: Ensure all fields exist if loading from an older version
+		const defaultDNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
+		store.config.intelligence.dna = { ...defaultDNA, ...store.config.intelligence.dna };
 	}
 
 	const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
