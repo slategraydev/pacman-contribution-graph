@@ -107,27 +107,54 @@ export const WALLS: {
 		.map(() => Array(GRID_HEIGHT + 1).fill({ active: false }))
 };
 
-export const setWall = (x: number, y: number, direction: 'horizontal' | 'vertical') => {
-	if (direction === 'horizontal') {
-		if (x >= 0 && x < WALLS.horizontal.length && y >= 0 && y < WALLS.horizontal[0].length) {
-			WALLS.horizontal[x][y] = { active: true };
-		}
-	} else {
-		if (x >= 0 && x < WALLS.vertical.length && y >= 0 && y < WALLS.vertical[0].length) {
-			WALLS.vertical[x][y] = { active: true };
-		}
+/**
+ * Places a wall relative to cell coordinates (1-based).
+ * @param cellX 1-based x coordinate of the cell
+ * @param cellY 1-based y coordinate of the cell
+ * @param position 'up', 'down', 'left', or 'right' relative to that cell
+ */
+export const setWall = (cellX: number, cellY: number, position: 'up' | 'down' | 'left' | 'right') => {
+	const x = cellX - 1;
+	const y = cellY - 1;
+
+	switch (position) {
+		case 'up':
+			if (x >= 0 && x < WALLS.horizontal.length && y >= 0 && y < WALLS.horizontal[0].length) {
+				WALLS.horizontal[x][y] = { active: true };
+			}
+			break;
+		case 'down':
+			if (x >= 0 && x < WALLS.horizontal.length && y + 1 >= 0 && y + 1 < WALLS.horizontal[0].length) {
+				WALLS.horizontal[x][y + 1] = { active: true };
+			}
+			break;
+		case 'left':
+			if (x >= 0 && x < WALLS.vertical.length && y >= 0 && y < WALLS.vertical[0].length) {
+				WALLS.vertical[x][y] = { active: true };
+			}
+			break;
+		case 'right':
+			if (x + 1 >= 0 && x + 1 < WALLS.vertical.length && y >= 0 && y < WALLS.vertical[0].length) {
+				WALLS.vertical[x + 1][y] = { active: true };
+			}
+			break;
 	}
 };
 
 export const hasWall = (x: number, y: number, direction: 'up' | 'down' | 'left' | 'right'): boolean => {
+	// The input x,y are 0-based cell indices (e.g., 0,0 is the first cell)
 	switch (direction) {
 		case 'up':
+			// Wall above cell (x,y)
 			return WALLS.horizontal[x][y].active;
 		case 'down':
+			// Wall below cell (x,y)
 			return WALLS.horizontal[x][y + 1].active;
 		case 'left':
+			// Wall to the left of cell (x,y)
 			return WALLS.vertical[x][y].active;
 		case 'right':
+			// Wall to the right of cell (x,y)
 			return WALLS.vertical[x + 1][y].active;
 	}
 };

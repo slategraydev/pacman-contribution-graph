@@ -29,5 +29,11 @@ export declare const WALLS: {
         active: boolean;
     }[][];
 };
-export declare const setWall: (x: number, y: number, direction: 'horizontal' | 'vertical') => void;
+/**
+ * Places a wall relative to cell coordinates (1-based).
+ * @param cellX 1-based x coordinate of the cell
+ * @param cellY 1-based y coordinate of the cell
+ * @param position 'up', 'down', 'left', or 'right' relative to that cell
+ */
+export declare const setWall: (cellX: number, cellY: number, position: 'up' | 'down' | 'left' | 'right') => void;
 export declare const hasWall: (x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') => boolean;
