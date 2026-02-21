@@ -134,8 +134,8 @@ const startGame = async (store: StoreType) => {
 		while (remainingCells() && store.frameCount < MAX_FRAMES) {
 			await updateGame(store);
 		}
-		// snapshot final
-		await updateGame(store);
+		// snapshot final and force completion if we hit the limit
+		await updateGame(store, store.frameCount >= MAX_FRAMES);
 	} else {
 		clearInterval(store.gameInterval as number);
 		store.gameInterval = setInterval(() => updateGame(store), DELTA_TIME * store.config.gameSpeed) as unknown as number;
@@ -158,11 +158,11 @@ export const determineGhostName = (index: number): GhostName => {
 
 /* ---------- update per frame ---------- */
 
-const updateGame = async (store: StoreType) => {
+const updateGame = async (store: StoreType, forceFinish = false) => {
 	store.frameCount++;
 
 	/* ---- FRAME-SKIP restored ---- */
-	if (store.frameCount % store.config.gameSpeed !== 0) {
+	if (!forceFinish && store.frameCount % store.config.gameSpeed !== 0) {
 		pushSnapshot(store, false);
 		return;
 	}
@@ -207,7 +207,7 @@ const updateGame = async (store: StoreType) => {
 
 	/* -------- end of game -------- */
 	const remaining = store.grid.some((row) => row.some((c) => c.commitsCount > 0));
-	if (!remaining) {
+	if (!remaining || forceFinish) {
 		if (store.config.outputFormat === 'svg') {
 			const svg = SVG.generateAnimatedSVG(store);
 			store.config.svgCallback(svg);
