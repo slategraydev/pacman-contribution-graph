@@ -51,28 +51,24 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 		fetch('https://elec.abozanona.me/github-action-analytics.php?username=' + userName);
 
 		const generateWithIntelligence = async (theme, runEvolution) => {
-			return new Promise((resolve) => {
-				let generatedSvg = '';
-				let updatedIntelligence = undefined;
+			let generatedSvg = '';
 
-				const conf = {
-					platform: 'github',
-					username: userName,
-					outputFormat: 'svg',
-					gameSpeed: 1,
-					gameTheme: theme,
-					intelligence: intelligence, // Pass the current intelligence
-					runEvolution: runEvolution, // Only evolve on the first run
-					githubSettings: { accessToken: githubToken },
-					svgCallback: (svg) => (generatedSvg = svg),
-					gameOverCallback: () => resolve({ svg: generatedSvg, intelligence: updatedIntelligence })
-				};
+			const conf = {
+				platform: 'github',
+				username: userName,
+				outputFormat: 'svg',
+				gameSpeed: 1,
+				gameTheme: theme,
+				intelligence: intelligence, // Pass the current intelligence
+				runEvolution: runEvolution, // Only evolve on the first run
+				githubSettings: { accessToken: githubToken },
+				svgCallback: (svg) => (generatedSvg = svg),
+				gameOverCallback: () => {}
+			};
 
-				const renderer = new PacmanRenderer(conf);
-				renderer.start().then((store) => {
-					updatedIntelligence = store.config.intelligence;
-				});
-			});
+			const renderer = new PacmanRenderer(conf);
+			const store = await renderer.start();
+			return { svg: generatedSvg, intelligence: store.config.intelligence };
 		};
 
 		// Run for Light Theme (WITH evolution)

@@ -28523,62 +28523,65 @@ const startGame = async (store) => {
     }
     const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
     // --- THE DAILY TOURNAMENT (Evolutionary Step) ---
-    if (store.config.runEvolution && store.config.outputFormat === 'svg' && remainingCells()) {
-        const originalDNA = { ...store.config.intelligence.dna };
-        // Define Mutations
-        const competitors = [
-            { name: 'Baseline', dna: { ...originalDNA } },
-            {
-                name: 'Aggressive',
-                dna: {
-                    ...originalDNA,
-                    pointWeight: originalDNA.pointWeight * 1.2,
-                    safetyWeight: originalDNA.safetyWeight * 0.8,
-                    dangerRadius: Math.max(3, originalDNA.dangerRadius - 1)
-                }
-            },
-            {
-                name: 'Conservative',
-                dna: {
-                    ...originalDNA,
-                    safetyWeight: originalDNA.safetyWeight * 1.2,
-                    pointWeight: originalDNA.pointWeight * 0.8,
-                    dangerRadius: Math.min(10, originalDNA.dangerRadius + 1)
-                }
-            }
-        ];
-        let bestFitness = -1;
-        let winnerDNA = originalDNA;
-        for (const competitor of competitors) {
-            // Deep clone store for sandbox run, but preserve functions in config
-            const sandboxStore = JSON.parse(JSON.stringify(store));
-            sandboxStore.config = {
-                ...store.config,
-                intelligence: {
-                    ...store.config.intelligence,
-                    dna: competitor.dna
-                }
-            };
-            sandboxStore.grid = store.grid.map((row) => row.map((cell) => ({ ...cell })));
-            placePacman(sandboxStore);
-            placeGhosts(sandboxStore);
-            // Run Headless Simulation
-            const MAX_FRAMES = 5000;
-            while (!sandboxStore.gameEnded && sandboxStore.frameCount < MAX_FRAMES) {
-                await updateGame(sandboxStore, false, true); // true = headless
-            }
-            // Calculate Fitness: (Total Dots Eaten / Total Frames) * 1000
-            const dotsEaten = sandboxStore.pacman.totalPoints;
-            const fitness = (dotsEaten / (sandboxStore.frameCount || 1)) * 1000;
-            if (fitness > bestFitness) {
-                bestFitness = fitness;
-                winnerDNA = competitor.dna;
-            }
-        }
-        // Update Intelligence with the winner
-        store.config.intelligence.dna = winnerDNA;
+    if (store.config.runEvolution && store.config.outputFormat === 'svg') {
+        // Increment generation every day the action runs
         store.config.intelligence.generation++;
-        store.config.intelligence.lastFitness = bestFitness;
+        if (remainingCells()) {
+            const originalDNA = { ...store.config.intelligence.dna };
+            // Define Mutations
+            const competitors = [
+                { name: 'Baseline', dna: { ...originalDNA } },
+                {
+                    name: 'Aggressive',
+                    dna: {
+                        ...originalDNA,
+                        pointWeight: originalDNA.pointWeight * 1.2,
+                        safetyWeight: originalDNA.safetyWeight * 0.8,
+                        dangerRadius: Math.max(3, originalDNA.dangerRadius - 1)
+                    }
+                },
+                {
+                    name: 'Conservative',
+                    dna: {
+                        ...originalDNA,
+                        safetyWeight: originalDNA.safetyWeight * 1.2,
+                        pointWeight: originalDNA.pointWeight * 0.8,
+                        dangerRadius: Math.min(10, originalDNA.dangerRadius + 1)
+                    }
+                }
+            ];
+            let bestFitness = -1;
+            let winnerDNA = originalDNA;
+            for (const competitor of competitors) {
+                // Deep clone store for sandbox run, but preserve functions in config
+                const sandboxStore = JSON.parse(JSON.stringify(store));
+                sandboxStore.config = {
+                    ...store.config,
+                    intelligence: {
+                        ...store.config.intelligence,
+                        dna: competitor.dna
+                    }
+                };
+                sandboxStore.grid = store.grid.map((row) => row.map((cell) => ({ ...cell })));
+                placePacman(sandboxStore);
+                placeGhosts(sandboxStore);
+                // Run Headless Simulation
+                const MAX_FRAMES = 5000;
+                while (!sandboxStore.gameEnded && sandboxStore.frameCount < MAX_FRAMES) {
+                    await updateGame(sandboxStore, false, true); // true = headless
+                }
+                // Calculate Fitness: (Total Dots Eaten / Total Frames) * 1000
+                const dotsEaten = sandboxStore.pacman.totalPoints;
+                const fitness = (dotsEaten / (sandboxStore.frameCount || 1)) * 1000;
+                if (fitness > bestFitness) {
+                    bestFitness = fitness;
+                    winnerDNA = competitor.dna;
+                }
+            }
+            // Update Intelligence with the winner
+            store.config.intelligence.dna = winnerDNA;
+            store.config.intelligence.lastFitness = bestFitness;
+        }
     }
     // --- FINAL RENDERING RUN ---
     if (store.config.outputFormat == 'canvas') {
@@ -29142,28 +29145,24 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 		fetch('https://elec.abozanona.me/github-action-analytics.php?username=' + userName);
 
 		const generateWithIntelligence = async (theme, runEvolution) => {
-			return new Promise((resolve) => {
-				let generatedSvg = '';
-				let updatedIntelligence = undefined;
+			let generatedSvg = '';
 
-				const conf = {
-					platform: 'github',
-					username: userName,
-					outputFormat: 'svg',
-					gameSpeed: 1,
-					gameTheme: theme,
-					intelligence: intelligence, // Pass the current intelligence
-					runEvolution: runEvolution, // Only evolve on the first run
-					githubSettings: { accessToken: githubToken },
-					svgCallback: (svg) => (generatedSvg = svg),
-					gameOverCallback: () => resolve({ svg: generatedSvg, intelligence: updatedIntelligence })
-				};
+			const conf = {
+				platform: 'github',
+				username: userName,
+				outputFormat: 'svg',
+				gameSpeed: 1,
+				gameTheme: theme,
+				intelligence: intelligence, // Pass the current intelligence
+				runEvolution: runEvolution, // Only evolve on the first run
+				githubSettings: { accessToken: githubToken },
+				svgCallback: (svg) => (generatedSvg = svg),
+				gameOverCallback: () => {}
+			};
 
-				const renderer = new src_PacmanRenderer(conf);
-				renderer.start().then((store) => {
-					updatedIntelligence = store.config.intelligence;
-				});
-			});
+			const renderer = new src_PacmanRenderer(conf);
+			const store = await renderer.start();
+			return { svg: generatedSvg, intelligence: store.config.intelligence };
 		};
 
 		// Run for Light Theme (WITH evolution)

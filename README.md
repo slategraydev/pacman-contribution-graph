@@ -141,6 +141,40 @@ To showcase the Pac-Man game on your GitHub profile, follow these steps:
 
 For a detailed guide, refer to the blog post: [Integrate Pac-Man Contribution Graph into Your GitHub Profile](https://abozanona.me/integrate-pacman-contribution-graph-into-github/)
 
+### 🧠 Persistence & Evolutionary Intelligence
+
+To allow Pac-Man to "learn" and for the **GEN (Generation)** count to increase daily, you must persist the `pacman-intelligence.json` file in your repository. This file stores the best-performing DNA from previous runs.
+
+Update your `main.yml` to include a step that commits this file back to your branch:
+
+```yaml
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: generate pacman-contribution-graph.svg
+        uses: abozanona/pacman-contribution-graph@main
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: commit intelligence
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add pacman-intelligence.json
+          git commit -m "update pacman intelligence" || echo "no changes"
+          git push origin main
+
+      - name: push pacman-contribution-graph.svg to the output branch
+        uses: crazy-max/ghaction-github-pages@v3.1.0
+        with:
+          target_branch: output
+          build_dir: dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
 ## Integrate into Your GitLab Profile
 
 To showcase the Pac-Man game on your GitLab profile, follow these steps:
