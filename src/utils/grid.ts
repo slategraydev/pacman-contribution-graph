@@ -71,6 +71,7 @@ const buildWalls = () => {
 	setWall(31, 4, 'right', WHITE);
 	setWall(32, 4, 'down', WHITE);
 	setWall(33, 4, 'down', WHITE);
+	setWall(32, 2, 'down', WHITE);
 	setWall(33, 2, 'down', WHITE);
 	setWall(33, 3, 'right', WHITE);
 	setWall(33, 4, 'right', WHITE);

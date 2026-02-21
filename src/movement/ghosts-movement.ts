@@ -179,17 +179,6 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 		return;
 	}
 
-	if (ghost.respawnCounter && ghost.respawnCounter > 0) {
-		ghost.respawnCounter--;
-		if (ghost.respawnCounter === 0 && ghost.originalName) {
-			ghost.name = ghost.originalName;
-			ghost.inHouse = true; // Stay in house to bob until released by timer
-			ghost.respawning = false;
-		} else {
-			return;
-		}
-	}
-
 	// Arcade Feature: 1-grid vertical bobbing (between y=3 and y=4)
 	const topLimit = 3;
 	const bottomLimit = 4;
@@ -213,11 +202,12 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 
 const moveEyesToHome = (ghost: Ghost, store: StoreType) => {
 	const home = { x: 26, y: 3 };
-	if (Math.abs(ghost.x - home.x) <= 1 && Math.abs(ghost.y - home.y) <= 1) {
-		ghost.x = home.x;
-		ghost.y = home.y;
+	if (ghost.x === home.x && ghost.y === home.y) {
 		ghost.inHouse = true;
-		ghost.respawnCounter = 1;
+		ghost.name = ghost.originalName || 'blinky'; // Restore original form
+		ghost.freezeCounter = 14; // Wait 2 seconds (150ms * 14 = 2100ms)
+		ghost.respawnCounter = 0;
+		ghost.respawning = false;
 		return;
 	}
 	const next = MovementUtils.findNextStepDijkstra({ x: ghost.x, y: ghost.y }, home, true);

@@ -26855,7 +26855,7 @@ const MONTHS = (/* unused pure expression or super */ null && (['Jan', 'Feb', 'M
 const DELTA_TIME = 150; // 150ms per frame
 const PACMAN_DEATH_DURATION = 10;
 const PACMAN_EAT_GHOST_PAUSE_DURATION = 1;
-const PACMAN_POWERUP_DURATION = 10;
+const PACMAN_POWERUP_DURATION = 20;
 /* ───────────── Official GitHub Palettes ─────────────
    5-color array: 0 = NONE … 4 = FOURTH_QUARTILE          */
 const GITHUB_LIGHT = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
@@ -27227,17 +27227,6 @@ const moveGhostInHouse = (ghost, store) => {
         }
         return;
     }
-    if (ghost.respawnCounter && ghost.respawnCounter > 0) {
-        ghost.respawnCounter--;
-        if (ghost.respawnCounter === 0 && ghost.originalName) {
-            ghost.name = ghost.originalName;
-            ghost.inHouse = true; // Stay in house to bob until released by timer
-            ghost.respawning = false;
-        }
-        else {
-            return;
-        }
-    }
     // Arcade Feature: 1-grid vertical bobbing (between y=3 and y=4)
     const topLimit = 3;
     const bottomLimit = 4;
@@ -27262,11 +27251,12 @@ const moveGhostInHouse = (ghost, store) => {
 };
 const moveEyesToHome = (ghost, store) => {
     const home = { x: 26, y: 3 };
-    if (Math.abs(ghost.x - home.x) <= 1 && Math.abs(ghost.y - home.y) <= 1) {
-        ghost.x = home.x;
-        ghost.y = home.y;
+    if (ghost.x === home.x && ghost.y === home.y) {
         ghost.inHouse = true;
-        ghost.respawnCounter = 1;
+        ghost.name = ghost.originalName || 'blinky'; // Restore original form
+        ghost.freezeCounter = 14; // Wait 2 seconds (150ms * 14 = 2100ms)
+        ghost.respawnCounter = 0;
+        ghost.respawning = false;
         return;
     }
     const next = MovementUtils.findNextStepDijkstra({ x: ghost.x, y: ghost.y }, home, true);
@@ -28195,7 +28185,7 @@ const generateAnimatedSVG = (store) => {
         svg += `<text x="${getX(3)}" y="${textY}">RAD: ${dna.dangerRadius.toFixed(2)}</text>`;
         svg += `<text x="${getX(4)}" y="${textY}">STUCK: ${dna.revisitPenalty.toFixed(2)}</text>`;
         svg += `<text x="${getX(5)}" y="${textY}">HUNT: ${dna.scaredGhostWeight.toFixed(2)}</text>`;
-        svg += `<text x="${getX(6)}" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(2)}</text>`;
+        svg += `<text x="${getX(6)}" y="${textY}">SCORE: ${Math.round(intelligence.lastScore)}</text>`;
         svg += `</g>`;
     }
     svg += '</svg>';
@@ -28538,7 +28528,7 @@ const startGame = async (store) => {
         store.config.intelligence = {
             generation: 1,
             dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 },
-            lastFitness: 0
+            lastScore: 0
         };
     }
     else {
@@ -28581,7 +28571,7 @@ const startGame = async (store) => {
                     }
                 });
             }
-            let bestFitness = -1;
+            let bestScore = -1;
             let winnerDNA = originalDNA;
             let winnerName = 'Baseline';
             let bestHistory = [];
@@ -28605,7 +28595,7 @@ const startGame = async (store) => {
                 while (!sandboxStore.gameEnded && sandboxStore.frameCount < MAX_FRAMES) {
                     await updateGame(sandboxStore, false, true); // true = headless
                 }
-                // --- REFINED FITNESS METRIC ---
+                // --- REFINED SCORE METRIC ---
                 // 1. Commits Value (Contribution points)
                 const commitsValue = sandboxStore.pacman.totalPoints;
                 // 2. Ghost Hunt Bonus (Pacman.points includes dots + ghosts*10)
@@ -28613,24 +28603,24 @@ const startGame = async (store) => {
                 const huntValue = sandboxStore.pacman.points * 10;
                 // 3. Survival Bonus (Reward keeping lives)
                 const survivalValue = sandboxStore.pacman.lives * 100;
-                let fitness = ((commitsValue + huntValue + survivalValue) / (sandboxStore.frameCount || 1)) * 1000;
+                let score = ((commitsValue + huntValue + survivalValue) / (sandboxStore.frameCount || 1)) * 1000;
                 // 4. Completion Bonus (Massive reward for clearing the board)
                 const isCleared = !sandboxStore.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
                 if (isCleared) {
-                    fitness *= 2.0; // Double fitness if board is cleared
+                    score *= 2.0; // Double score if board is cleared
                 }
-                if (fitness > bestFitness || bestHistory.length === 0) {
-                    bestFitness = fitness;
+                if (score > bestScore || bestHistory.length === 0) {
+                    bestScore = score;
                     winnerDNA = competitor.dna;
                     winnerName = competitor.name;
                     bestHistory = sandboxStore.gameHistory;
                 }
             }
-            console.log(`🏆 Tournament winner: ${winnerName} (Fitness: ${bestFitness.toFixed(2)})`);
+            console.log(`🏆 Tournament winner: ${winnerName} (Score: ${bestScore.toFixed(2)})`);
             console.log(`🧬 New DNA: SAFE=${winnerDNA.safetyWeight.toFixed(2)}, GREED=${winnerDNA.pointWeight.toFixed(2)}, RAD=${winnerDNA.dangerRadius.toFixed(2)}, HUNT=${winnerDNA.scaredGhostWeight.toFixed(2)}`);
             // Update Intelligence with the winner
             store.config.intelligence.dna = winnerDNA;
-            store.config.intelligence.lastFitness = bestFitness;
+            store.config.intelligence.lastScore = bestScore;
             // REUSE the best history for the final SVG output to save CPU time
             store.gameHistory = bestHistory;
             store.gameEnded = true;
@@ -28795,15 +28785,6 @@ const updateGame = async (store, forceFinish = false, headless = false) => {
     }
     /* -- ghost respawn -- */
     store.ghosts.forEach((ghost) => {
-        if (ghost.inHouse && ghost.respawnCounter && ghost.respawnCounter > 0) {
-            ghost.respawnCounter--;
-            if (ghost.respawnCounter === 0) {
-                ghost.name = ghost.originalName || determineGhostName(store.ghosts.indexOf(ghost));
-                ghost.inHouse = false;
-                ghost.scared = store.pacman.powerupRemainingDuration > 0;
-                ghost.justReleasedFromHouse = true;
-            }
-        }
         if (ghost.freezeCounter) {
             ghost.freezeCounter--;
             if (ghost.freezeCounter === 0) {
@@ -28850,7 +28831,7 @@ const updateGame = async (store, forceFinish = false, headless = false) => {
         });
     }
     checkCollisions(store);
-    if (store.pacman.deadRemainingDuration === 0) {
+    if (store.pacman.deadRemainingDuration === 0 && store.pacman.pauseRemainingDuration === 0) {
         GhostsMovement.moveGhosts(store);
         checkCollisions(store);
     }
@@ -29159,6 +29140,7 @@ const buildWalls = () => {
     setWall(31, 4, 'right', WHITE);
     setWall(32, 4, 'down', WHITE);
     setWall(33, 4, 'down', WHITE);
+    setWall(32, 2, 'down', WHITE);
     setWall(33, 2, 'down', WHITE);
     setWall(33, 3, 'right', WHITE);
     setWall(33, 4, 'right', WHITE);

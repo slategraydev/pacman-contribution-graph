@@ -90,7 +90,7 @@ export interface DNA {
 export interface Intelligence {
 	generation: number;
 	dna: DNA;
-	lastFitness: number;
+	lastScore: number;
 }
 
 /* ───────────────────────── Settings ───────────────────────────── */

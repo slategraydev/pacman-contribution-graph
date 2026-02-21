@@ -108,7 +108,7 @@ const startGame = async (store: StoreType) => {
 		store.config.intelligence = {
 			generation: 1,
 			dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 },
-			lastFitness: 0
+			lastScore: 0
 		};
 	} else {
 		// DNA Migration: Ensure all fields exist if loading from an older version
@@ -156,7 +156,7 @@ const startGame = async (store: StoreType) => {
 				});
 			}
 
-			let bestFitness = -1;
+			let bestScore = -1;
 			let winnerDNA = originalDNA;
 			let winnerName = 'Baseline';
 			let bestHistory: any[] = [];
@@ -185,7 +185,7 @@ const startGame = async (store: StoreType) => {
 					await updateGame(sandboxStore, false, true); // true = headless
 				}
 
-				// --- REFINED FITNESS METRIC ---
+				// --- REFINED SCORE METRIC ---
 				// 1. Commits Value (Contribution points)
 				const commitsValue = sandboxStore.pacman.totalPoints;
 				// 2. Ghost Hunt Bonus (Pacman.points includes dots + ghosts*10)
@@ -194,30 +194,30 @@ const startGame = async (store: StoreType) => {
 				// 3. Survival Bonus (Reward keeping lives)
 				const survivalValue = sandboxStore.pacman.lives * 100;
 
-				let fitness = ((commitsValue + huntValue + survivalValue) / (sandboxStore.frameCount || 1)) * 1000;
+				let score = ((commitsValue + huntValue + survivalValue) / (sandboxStore.frameCount || 1)) * 1000;
 
 				// 4. Completion Bonus (Massive reward for clearing the board)
 				const isCleared = !sandboxStore.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
 				if (isCleared) {
-					fitness *= 2.0; // Double fitness if board is cleared
+					score *= 2.0; // Double score if board is cleared
 				}
 
-				if (fitness > bestFitness || bestHistory.length === 0) {
-					bestFitness = fitness;
+				if (score > bestScore || bestHistory.length === 0) {
+					bestScore = score;
 					winnerDNA = competitor.dna;
 					winnerName = competitor.name;
 					bestHistory = sandboxStore.gameHistory;
 				}
 			}
 
-			console.log(`🏆 Tournament winner: ${winnerName} (Fitness: ${bestFitness.toFixed(2)})`);
+			console.log(`🏆 Tournament winner: ${winnerName} (Score: ${bestScore.toFixed(2)})`);
 			console.log(
 				`🧬 New DNA: SAFE=${winnerDNA.safetyWeight.toFixed(2)}, GREED=${winnerDNA.pointWeight.toFixed(2)}, RAD=${winnerDNA.dangerRadius.toFixed(2)}, HUNT=${winnerDNA.scaredGhostWeight.toFixed(2)}`
 			);
 
 			// Update Intelligence with the winner
 			store.config.intelligence.dna = winnerDNA;
-			store.config.intelligence.lastFitness = bestFitness;
+			store.config.intelligence.lastScore = bestScore;
 
 			// REUSE the best history for the final SVG output to save CPU time
 			store.gameHistory = bestHistory;
@@ -403,15 +403,6 @@ export const updateGame = async (store: StoreType, forceFinish = false, headless
 
 	/* -- ghost respawn -- */
 	store.ghosts.forEach((ghost) => {
-		if (ghost.inHouse && ghost.respawnCounter && ghost.respawnCounter > 0) {
-			ghost.respawnCounter--;
-			if (ghost.respawnCounter === 0) {
-				ghost.name = ghost.originalName || determineGhostName(store.ghosts.indexOf(ghost));
-				ghost.inHouse = false;
-				ghost.scared = store.pacman.powerupRemainingDuration > 0;
-				ghost.justReleasedFromHouse = true;
-			}
-		}
 		if (ghost.freezeCounter) {
 			ghost.freezeCounter--;
 			if (ghost.freezeCounter === 0) {
@@ -464,7 +455,7 @@ export const updateGame = async (store: StoreType, forceFinish = false, headless
 
 	checkCollisions(store);
 
-	if (store.pacman.deadRemainingDuration === 0) {
+	if (store.pacman.deadRemainingDuration === 0 && store.pacman.pauseRemainingDuration === 0) {
 		GhostsMovement.moveGhosts(store);
 		checkCollisions(store);
 	}
