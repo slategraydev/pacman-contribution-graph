@@ -113,8 +113,6 @@ const startGame = async (store: StoreType) => {
 	} else {
 		// DNA Migration: Ensure all fields exist if loading from an older version
 		const dna = store.config.intelligence.dna;
-		// FORCE HUNT to 3.0 for this run to jumpstart observation
-		dna.scaredGhostWeight = 3.0;
 
 		// Generic fallback for other fields
 		const defaultDNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
@@ -513,7 +511,12 @@ const checkCollisions = (store: StoreType) => {
 				ghost.originalName = ghost.name;
 				// ghost.name = 'eyes'; // Moved to game loop after deathPauseDuration
 				ghost.scared = false;
-				ghost.target = { x: 26, y: 3 };
+
+				// Set target home based on ghost name (Blinky returns to Inky's spot)
+				if (ghost.name === 'pinky') ghost.target = { x: 25, y: 4 };
+				else if (ghost.name === 'clyde') ghost.target = { x: 27, y: 4 };
+				else ghost.target = { x: 26, y: 4 }; // Blinky and Inky
+
 				store.pacman.points += 10;
 				store.pacman.pauseRemainingDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;
 				ghost.deathPauseDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;

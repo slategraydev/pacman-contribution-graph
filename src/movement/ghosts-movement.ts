@@ -179,12 +179,8 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 		return;
 	}
 
-	// If ghost is currently waiting to respawn/release, don't bob yet
-	if (ghost.freezeCounter > 0) {
-		return;
-	}
-
 	// Arcade Feature: 1-grid vertical bobbing (between y=3 and y=4)
+	// This happens even while freezeCounter is active
 	const topLimit = 3;
 	const bottomLimit = 4;
 
@@ -203,17 +199,28 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 			ghost.y = bottomLimit;
 		}
 	}
+
+	// If ghost is currently waiting to respawn/release, we've already done the bobbing
+	if (ghost.freezeCounter > 0) {
+		return;
+	}
 };
 
 const moveEyesToHome = (ghost: Ghost, store: StoreType) => {
-	const home = { x: 26, y: 3 };
+	const originalName = ghost.originalName || 'blinky';
+	let home = { x: 26, y: 4 }; // Default for Inky and Blinky
+	if (originalName === 'pinky') home = { x: 25, y: 4 };
+	else if (originalName === 'clyde') home = { x: 27, y: 4 };
+
 	if (ghost.x === home.x && ghost.y === home.y) {
 		ghost.inHouse = true;
-		ghost.name = ghost.originalName || 'blinky'; // Restore original form
+		ghost.name = originalName; // Restore original form
 		ghost.scared = false; // Ensure it's not scared when it becomes a ghost again
 		ghost.freezeCounter = 14; // Wait 2 seconds (150ms * 14 = 2100ms)
 		ghost.respawnCounter = 0;
 		ghost.respawning = false;
+		// Initialize direction for bobbing
+		ghost.direction = 'up';
 		return;
 	}
 	const next = MovementUtils.findNextStepDijkstra({ x: ghost.x, y: ghost.y }, home, true);
