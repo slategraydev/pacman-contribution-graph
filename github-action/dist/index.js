@@ -28353,6 +28353,7 @@ const generateAnimatedSVG = (store) => {
 		<animateTransform attributeName="transform" type="rotate" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanRotationAnimation.keyTimes}"
 			values="${pacmanRotationAnimation.values}"
+			calcMode="discrete"
 			additive="sum"/>
 		<animate attributeName="d" dur="0.5s" repeatCount="indefinite"
 			values="${generatePacManPath(0.55)};${generatePacManPath(0.05)};${generatePacManPath(0.55)}"/>
@@ -28367,6 +28368,7 @@ const generateAnimatedSVG = (store) => {
 				dur="${totalDurationMs}ms" repeatCount="indefinite"
 				keyTimes="${ghostPositionAnimation.keyTimes}"
 				values="${ghostPositionAnimation.values}"
+				calcMode="discrete"
 				additive="replace"/>`;
         // Map all possible state + direction combinations for this ghost
         const stateChanges = mapGhostStateChanges(store, index);
@@ -28386,7 +28388,8 @@ const generateAnimatedSVG = (store) => {
 				<animate attributeName="visibility"
 					dur="${totalDurationMs}ms" repeatCount="indefinite"
 					keyTimes="${keyTimes}"
-					values="${values}" />
+					values="${values}"
+					calcMode="discrete" />
 			</use>`;
         }
         // Close the ghost group
