@@ -22,6 +22,9 @@ const moveGhosts = (store: StoreType) => {
 	updateGameMode(store);
 
 	for (const ghost of store.ghosts) {
+		// Skip ghosts in death pause
+		if (ghost.deathPauseDuration > 0) continue;
+
 		if (ghost.inHouse) {
 			moveGhostInHouse(ghost, store);
 			if (ghost.inHouse) continue;

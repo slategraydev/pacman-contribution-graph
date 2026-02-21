@@ -113,9 +113,9 @@ const startGame = async (store: StoreType) => {
 	} else {
 		// DNA Migration: Ensure all fields exist if loading from an older version
 		const dna = store.config.intelligence.dna;
-		if (dna.scaredGhostWeight === undefined || dna.scaredGhostWeight === 0) {
-			dna.scaredGhostWeight = 3.0;
-		}
+		// FORCE HUNT to 3.0 for this run to jumpstart observation
+		dna.scaredGhostWeight = 3.0;
+
 		// Generic fallback for other fields
 		const defaultDNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
 		store.config.intelligence.dna = { ...defaultDNA, ...dna };
@@ -136,9 +136,9 @@ const startGame = async (store: StoreType) => {
 				const drift = 1 + (Math.random() * intensity * 2 - intensity);
 				let newVal = val * drift;
 				// If value is NaN or truly invalid, give it a baseline
-				if (isNaN(newVal) || newVal <= 0) newVal = 0.1;
-				// Hard floor of 0.10 ensures math stays alive for future drift
-				return Math.max(0.1, newVal);
+				if (isNaN(newVal) || newVal <= 0) newVal = 0.01;
+				// Hard floor of 0.01 ensures math stays alive for future drift
+				return Math.max(0.01, newVal);
 			};
 
 			// Define Mutations: Generate 10 competitors (Baseline + 9 Mutations)
@@ -305,6 +305,17 @@ export const determineGhostName = (index: number): GhostName => {
 /* ---------- update per frame ---------- */
 
 export const updateGame = async (store: StoreType, forceFinish = false, headless = false) => {
+	/* -------- ghost timers (DEATH PAUSE) -------- */
+	// This MUST run every frame, even if Pac-Man is paused, to ensure eyes transition
+	store.ghosts.forEach((ghost) => {
+		if (ghost.deathPauseDuration > 0) {
+			ghost.deathPauseDuration--;
+			if (ghost.deathPauseDuration === 0) {
+				ghost.name = 'eyes';
+			}
+		}
+	});
+
 	/* -------- pacman timers (DEATH PAUSE) -------- */
 	if (store.pacman.deadRemainingDuration > 0) {
 		store.pacman.deadRemainingDuration--;
@@ -351,16 +362,6 @@ export const updateGame = async (store: StoreType, forceFinish = false, headless
 	/* -------- pacman timers (GHOST EATEN PAUSE) -------- */
 	if (store.pacman.pauseRemainingDuration > 0) {
 		store.pacman.pauseRemainingDuration--;
-
-		// Also update ghosts death pause
-		store.ghosts.forEach((ghost) => {
-			if (ghost.deathPauseDuration > 0) {
-				ghost.deathPauseDuration--;
-				if (ghost.deathPauseDuration === 0) {
-					ghost.name = 'eyes';
-				}
-			}
-		});
 
 		if (headless) return;
 
