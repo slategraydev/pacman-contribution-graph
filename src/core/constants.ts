@@ -14,7 +14,7 @@ export const GHOST_NAMES: GhostName[] = ['blinky', 'clyde', 'inky', 'pinky', 'ey
 
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-export const DELTA_TIME = 200; // 200ms per frame
+export const DELTA_TIME = 150; // 150ms per frame
 export const PACMAN_DEATH_DURATION = 10;
 export const PACMAN_POWERUP_DURATION = 10;
 

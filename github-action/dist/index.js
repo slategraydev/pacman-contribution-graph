@@ -26852,7 +26852,7 @@ const PACMAN_COLOR_POWERUP = 'red';
 const PACMAN_COLOR_DEAD = '#80808064';
 const GHOST_NAMES = (/* unused pure expression or super */ null && (['blinky', 'clyde', 'inky', 'pinky', 'eyes']));
 const MONTHS = (/* unused pure expression or super */ null && (['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']));
-const DELTA_TIME = 200; // 200ms per frame
+const DELTA_TIME = 150; // 150ms per frame
 const PACMAN_DEATH_DURATION = 10;
 const PACMAN_POWERUP_DURATION = 10;
 /* ───────────── Official GitHub Palettes ─────────────
