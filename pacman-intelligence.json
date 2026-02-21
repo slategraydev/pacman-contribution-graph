@@ -1,0 +1,10 @@
+{
+  "generation": 2,
+  "dna": {
+    "safetyWeight": 1.5,
+    "pointWeight": 0.8,
+    "dangerRadius": 7,
+    "revisitPenalty": 100
+  },
+  "lastFitness": 1128.9592760180994
+}
