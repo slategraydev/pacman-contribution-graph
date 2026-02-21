@@ -98,9 +98,9 @@ const stopGame = async (store: StoreType) => {
 };
 
 const startGame = async (store: StoreType) => {
-	// Initialize brain if missing
-	if (!store.config.brain) {
-		store.config.brain = {
+	// Initialize intelligence if missing
+	if (!store.config.intelligence) {
+		store.config.intelligence = {
 			generation: 1,
 			dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100 },
 			lastFitness: 0
@@ -111,7 +111,7 @@ const startGame = async (store: StoreType) => {
 
 	// --- THE DAILY TOURNAMENT (Evolutionary Step) ---
 	if (store.config.outputFormat === 'svg' && remainingCells()) {
-		const originalDNA = { ...store.config.brain.dna };
+		const originalDNA = { ...store.config.intelligence.dna };
 
 		// Define Mutations
 		const competitors = [
@@ -140,9 +140,15 @@ const startGame = async (store: StoreType) => {
 		let winnerDNA = originalDNA;
 
 		for (const competitor of competitors) {
-			// Deep clone store for sandbox run
+			// Deep clone store for sandbox run, but preserve functions in config
 			const sandboxStore: StoreType = JSON.parse(JSON.stringify(store));
-			sandboxStore.config.brain = { ...store.config.brain, dna: competitor.dna };
+			sandboxStore.config = {
+				...store.config,
+				intelligence: {
+					...store.config.intelligence!,
+					dna: competitor.dna
+				}
+			};
 			sandboxStore.grid = store.grid.map((row) => row.map((cell) => ({ ...cell })));
 
 			placePacman(sandboxStore);
@@ -164,10 +170,10 @@ const startGame = async (store: StoreType) => {
 			}
 		}
 
-		// Update Brain with the winner
-		store.config.brain.dna = winnerDNA;
-		store.config.brain.generation++;
-		store.config.brain.lastFitness = bestFitness;
+		// Update Intelligence with the winner
+		store.config.intelligence.dna = winnerDNA;
+		store.config.intelligence.generation++;
+		store.config.intelligence.lastFitness = bestFitness;
 	}
 
 	// --- FINAL RENDERING RUN ---

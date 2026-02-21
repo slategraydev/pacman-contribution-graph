@@ -197,20 +197,20 @@ const generateAnimatedSVG = (store: StoreType) => {
 		svg += `</g>`;
 	});
 
-	// --- BRAIN STATUS FOOTER ---
-	if (store.config.brain) {
-		const brain = store.config.brain;
+	// --- INTELLIGENCE STATUS FOOTER ---
+	if (store.config.intelligence) {
+		const intelligence = store.config.intelligence;
 		const footerY = svgHeight - 25;
 		const textColor = Utils.getCurrentTheme(store).textColor;
-		const dna = brain.dna;
+		const dna = intelligence.dna;
 
-		svg += `<g id="brain-stats" font-family="monospace" font-size="10" fill="${textColor}">`;
-		svg += `<text x="10" y="${footerY}">GEN: ${brain.generation}</text>`;
+		svg += `<g id="intelligence-stats" font-family="monospace" font-size="10" fill="${textColor}">`;
+		svg += `<text x="10" y="${footerY}">GEN: ${intelligence.generation}</text>`;
 		svg += `<text x="70" y="${footerY}">SAFETY: ${dna.safetyWeight.toFixed(2)}</text>`;
 		svg += `<text x="150" y="${footerY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
 		svg += `<text x="230" y="${footerY}">RAD: ${dna.dangerRadius}</text>`;
 		svg += `<text x="290" y="${footerY}">STUCK_PENALTY: ${dna.revisitPenalty}</text>`;
-		svg += `<text x="${svgWidth - 10}" y="${footerY}" text-anchor="end">FITNESS: ${brain.lastFitness.toFixed(0)}</text>`;
+		svg += `<text x="${svgWidth - 10}" y="${footerY}" text-anchor="end">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
 		svg += `</g>`;
 	}
 

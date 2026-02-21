@@ -35,25 +35,25 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 		const userName = core.getInput('github_user_name');
 		const githubToken = core.getInput('github_token');
 
-		// --- BRAIN PERSISTENCE ---
-		const brainPath = 'pacman-brain.json';
-		let brain = undefined;
-		if (fs.existsSync(brainPath)) {
+		// --- INTELLIGENCE PERSISTENCE ---
+		const intelligencePath = 'pacman-intelligence.json';
+		let intelligence = undefined;
+		if (fs.existsSync(intelligencePath)) {
 			try {
-				brain = JSON.parse(fs.readFileSync(brainPath, 'utf8'));
-				console.log(`🧠 Brain loaded: Generation ${brain.generation}`);
+				intelligence = JSON.parse(fs.readFileSync(intelligencePath, 'utf8'));
+				console.log(`✨ Intelligence loaded: Generation ${intelligence.generation}`);
 			} catch (e) {
-				console.warn('⚠️ Could not parse brain.json, starting fresh.');
+				console.warn('⚠️ Could not parse intelligence.json, starting fresh.');
 			}
 		}
 
 		// TODO: Check active users
 		fetch('https://elec.abozanona.me/github-action-analytics.php?username=' + userName);
 
-		const generateWithBrain = async (theme) => {
+		const generateWithIntelligence = async (theme) => {
 			return new Promise((resolve) => {
 				let generatedSvg = '';
-				let updatedBrain = undefined;
+				let updatedIntelligence = undefined;
 
 				const conf = {
 					platform: 'github',
@@ -61,40 +61,40 @@ const generateSvg = async (userName, githubToken, theme, playerStyle) => {
 					outputFormat: 'svg',
 					gameSpeed: 1,
 					gameTheme: theme,
-					brain: brain, // Pass the loaded brain
+					intelligence: intelligence, // Pass the loaded intelligence
 					githubSettings: { accessToken: githubToken },
 					svgCallback: (svg) => (generatedSvg = svg),
-					gameOverCallback: () => resolve({ svg: generatedSvg, brain: updatedBrain })
+					gameOverCallback: () => resolve({ svg: generatedSvg, intelligence: updatedIntelligence })
 				};
 
 				const renderer = new PacmanRenderer(conf);
 				renderer.start().then((store) => {
-					updatedBrain = store.config.brain;
+					updatedIntelligence = store.config.intelligence;
 				});
 			});
 		};
 
 		// Run for Light Theme
-		const lightResult = await generateWithBrain('github');
+		const lightResult = await generateWithIntelligence('github');
 		svgContent = lightResult.svg;
-		brain = lightResult.brain; // Update brain from the first run's evolution
+		intelligence = lightResult.intelligence; // Update intelligence from the first run's evolution
 
 		console.log(`💾 writing to dist/pacman-contribution-graph.svg`);
 		fs.mkdirSync(path.dirname('dist/pacman-contribution-graph.svg'), { recursive: true });
 		fs.writeFileSync('dist/pacman-contribution-graph.svg', svgContent);
 
-		// Run for Dark Theme (reuse evolved brain)
-		const darkResult = await generateWithBrain('github-dark');
+		// Run for Dark Theme (reuse evolved intelligence)
+		const darkResult = await generateWithIntelligence('github-dark');
 		svgContent = darkResult.svg;
 
 		console.log(`💾 writing to dist/pacman-contribution-graph-dark.svg`);
 		fs.mkdirSync(path.dirname('dist/pacman-contribution-graph-dark.svg'), { recursive: true });
 		fs.writeFileSync('dist/pacman-contribution-graph-dark.svg', svgContent);
 
-		// --- SAVE UPDATED BRAIN ---
-		if (brain) {
-			fs.writeFileSync(brainPath, JSON.stringify(brain, null, 2));
-			console.log(`🧠 Brain saved: Generation ${brain.generation}`);
+		// --- SAVE UPDATED INTELLIGENCE ---
+		if (intelligence) {
+			fs.writeFileSync(intelligencePath, JSON.stringify(intelligence, null, 2));
+			console.log(`✨ Intelligence saved: Generation ${intelligence.generation}`);
 		}
 	} catch (e) {
 		core.setFailed(`Action failed with "${e.message}"`);

@@ -84,7 +84,7 @@ export interface DNA {
 	revisitPenalty: number;
 }
 
-export interface Brain {
+export interface Intelligence {
 	generation: number;
 	dna: DNA;
 	lastFitness: number;
@@ -107,7 +107,7 @@ export interface Config {
 	};
 	maxFrames?: number; // Maximum frame rate for the game
 	maxHistorySize?: number;
-	brain?: Brain;
+	intelligence?: Intelligence;
 }
 
 /* ───────────────────────── Themes ──────────────────────────────────── */

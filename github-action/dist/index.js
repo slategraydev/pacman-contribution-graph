@@ -27646,7 +27646,9 @@ const checkAndEatPoint = (store) => {
     if (cell.level !== 'NONE') {
         store.pacman.totalPoints += cell.commitsCount;
         store.pacman.points++;
-        store.config.pointsIncreasedCallback(store.pacman.totalPoints);
+        if (typeof store.config.pointsIncreasedCallback === 'function') {
+            store.config.pointsIncreasedCallback(store.pacman.totalPoints);
+        }
         const theme = Utils.getCurrentTheme(store);
         // Power-up activated in the cell
         if (cell.level === 'FOURTH_QUARTILE') {
@@ -28539,9 +28541,15 @@ const startGame = async (store) => {
         let bestFitness = -1;
         let winnerDNA = originalDNA;
         for (const competitor of competitors) {
-            // Deep clone store for sandbox run
+            // Deep clone store for sandbox run, but preserve functions in config
             const sandboxStore = JSON.parse(JSON.stringify(store));
-            sandboxStore.config.brain = { ...store.config.brain, dna: competitor.dna };
+            sandboxStore.config = {
+                ...store.config,
+                brain: {
+                    ...store.config.brain,
+                    dna: competitor.dna
+                }
+            };
             sandboxStore.grid = store.grid.map((row) => row.map((cell) => ({ ...cell })));
             placePacman(sandboxStore);
             placeGhosts(sandboxStore);

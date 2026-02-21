@@ -139,8 +139,8 @@ const calculateOptimalPath = (store: StoreType, target: Point2d) => {
 
 	const maxDangerValue = 25; // Increased to match new danger radius
 
-	// Set weights according to brain DNA (or defaults)
-	const dna = store.config.brain?.dna || {
+	// Set weights according to intelligence DNA (or defaults)
+	const dna = store.config.intelligence?.dna || {
 		safetyWeight: 1.5,
 		pointWeight: 0.8,
 		dangerRadius: 7,
@@ -202,7 +202,7 @@ const calculateOptimalPath = (store: StoreType, target: Point2d) => {
 const createDangerMap = (store: StoreType) => {
 	const map = new Map<string, number>();
 	const hasPowerup = !!store.pacman.powerupRemainingDuration;
-	const radius = store.config.brain?.dna.dangerRadius || 7;
+	const radius = store.config.intelligence?.dna.dangerRadius || 7;
 
 	store.ghosts.forEach((ghost) => {
 		if (ghost.scared || ghost.name === 'eyes') return;
@@ -285,7 +285,9 @@ const checkAndEatPoint = (store: StoreType): boolean => {
 	if (cell.level !== 'NONE') {
 		store.pacman.totalPoints += cell.commitsCount;
 		store.pacman.points++;
-		store.config.pointsIncreasedCallback(store.pacman.totalPoints);
+		if (typeof store.config.pointsIncreasedCallback === 'function') {
+			store.config.pointsIncreasedCallback(store.pacman.totalPoints);
+		}
 
 		const theme = Utils.getCurrentTheme(store);
 		// Power-up activated in the cell
