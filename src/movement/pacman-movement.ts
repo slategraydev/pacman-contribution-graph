@@ -5,8 +5,8 @@ import { MovementUtils } from './movement-utils';
 
 const RECENT_POSITIONS_LIMIT = 5;
 
-const movePacman = (store: StoreType) => {
-	if (store.pacman.deadRemainingDuration) return;
+const movePacman = (store: StoreType): boolean => {
+	if (store.pacman.deadRemainingDuration) return false;
 
 	const hasPowerup = !!store.pacman.powerupRemainingDuration;
 	const scaredGhosts = store.ghosts.filter((ghost) => ghost.scared);
@@ -38,10 +38,10 @@ const movePacman = (store: StoreType) => {
 		const nextPosition = calculateOptimalPath(store, targetPosition);
 		nextPosition ? updatePacmanPosition(store, nextPosition) : makeDesperationMove(store);
 
-		checkAndEatPoint(store);
+		return checkAndEatPoint(store);
 	} catch (error) {
 		console.error('Error in movePacman:', error);
-		// If all else fails, don't move
+		return false;
 	}
 };
 
@@ -289,7 +289,7 @@ const updatePacmanPosition = (store: StoreType, position: Point2d) => {
 	store.pacman.y = position.y;
 };
 
-const checkAndEatPoint = (store: StoreType) => {
+const checkAndEatPoint = (store: StoreType): boolean => {
 	const cell = store.grid[store.pacman.x][store.pacman.y];
 	if (cell.level !== 'NONE') {
 		store.pacman.totalPoints += cell.commitsCount;
@@ -306,7 +306,9 @@ const checkAndEatPoint = (store: StoreType) => {
 		cell.level = 'NONE';
 		cell.color = theme.intensityColors[0];
 		cell.commitsCount = 0;
+		return true;
 	}
+	return false;
 };
 
 const activatePowerUp = (store: StoreType) => {

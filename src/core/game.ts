@@ -127,7 +127,8 @@ const startGame = async (store: StoreType) => {
 	}
 
 	if (store.config.outputFormat === 'svg') {
-		while (remainingCells()) {
+		const MAX_FRAMES = 5000; // Hard limit to prevent OOM
+		while (remainingCells() && store.frameCount < MAX_FRAMES) {
 			await updateGame(store);
 		}
 		// snapshot final
@@ -159,7 +160,7 @@ const updateGame = async (store: StoreType) => {
 
 	/* ---- FRAME-SKIP restored ---- */
 	if (store.frameCount % store.config.gameSpeed !== 0) {
-		pushSnapshot(store);
+		pushSnapshot(store, false);
 		return;
 	}
 
@@ -219,7 +220,7 @@ const updateGame = async (store: StoreType) => {
 	}
 
 	/* -------- movements -------- */
-	PacmanMovement.movePacman(store);
+	const pointEaten = PacmanMovement.movePacman(store);
 
 	const cell = store.grid[store.pacman.x]?.[store.pacman.y];
 	if (cell && cell.level === 'FOURTH_QUARTILE' && store.pacman.powerupRemainingDuration === 0) {
@@ -239,7 +240,9 @@ const updateGame = async (store: StoreType) => {
 	store.pacmanMouthOpen = !store.pacmanMouthOpen;
 
 	/* ---- single snapshot per frame ---- */
-	pushSnapshot(store);
+	// Snapshot grid INSTANTLY if a point was eaten, otherwise every 10 frames to save memory
+	const shouldSnapshotGrid = pointEaten || store.frameCount % 10 === 0;
+	pushSnapshot(store, shouldSnapshotGrid);
 
 	if (store.config.outputFormat == 'canvas') Canvas.drawGrid(store);
 	if (store.config.outputFormat == 'canvas') Canvas.drawPacman(store);
@@ -248,20 +251,25 @@ const updateGame = async (store: StoreType) => {
 };
 
 /* ---------- snapshot helper ---------- */
-const pushSnapshot = (store: StoreType) => {
-	// Only store a minimal representation of the grid to save memory
-	// The full grid objects are redundant if only levels/colors change
-	const gridSnapshot = store.grid.map((row) =>
-		row.map((col) => ({
-			level: col.level,
-			color: col.color
-		}))
-	);
+const pushSnapshot = (store: StoreType, includeGrid: boolean) => {
+	let gridSnapshot = null;
+
+	if (includeGrid || store.gameHistory.length === 0) {
+		gridSnapshot = store.grid.map((row) =>
+			row.map((col) => ({
+				level: col.level,
+				color: col.color
+			}))
+		);
+	} else {
+		// Reuse previous grid to save memory
+		gridSnapshot = store.gameHistory[store.gameHistory.length - 1].grid;
+	}
 
 	store.gameHistory.push({
 		pacman: { ...store.pacman },
 		ghosts: store.ghosts.map((g) => ({ ...g })),
-		grid: gridSnapshot as any // Type cast because we only need these for rendering
+		grid: gridSnapshot as any
 	});
 };
 
