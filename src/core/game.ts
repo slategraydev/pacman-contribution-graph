@@ -115,6 +115,9 @@ const startGame = async (store: StoreType) => {
 		placeGhosts(store);
 	}
 
+	// Capture initial state so gameHistory is never empty
+	pushSnapshot(store, true);
+
 	if (store.config.outputFormat == 'canvas') Canvas.drawGrid(store);
 
 	if (store.config.outputFormat == 'canvas') {
@@ -263,7 +266,8 @@ const pushSnapshot = (store: StoreType, includeGrid: boolean) => {
 		);
 	} else {
 		// Reuse previous grid to save memory
-		gridSnapshot = store.gameHistory[store.gameHistory.length - 1].grid;
+		const lastHistory = store.gameHistory[store.gameHistory.length - 1];
+		gridSnapshot = lastHistory ? lastHistory.grid : store.grid;
 	}
 
 	store.gameHistory.push({

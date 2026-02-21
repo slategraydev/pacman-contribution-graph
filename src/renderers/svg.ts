@@ -41,12 +41,22 @@ const generateAnimatedSVG = (store: StoreType) => {
 		for (let y = 0; y < GRID_HEIGHT; y++) {
 			const cellX = x * (CELL_SIZE + GAP_SIZE);
 			const cellY = y * (CELL_SIZE + GAP_SIZE) + 15;
-			const cellColorAnimation = generateChangingValuesAnimation(store, generateCellColorValues(store, x, y));
-			svg += `<rect id="c-${x}-${y}" x="${cellX}" y="${cellY}" width="${CELL_SIZE}" height="${CELL_SIZE}" rx="5" fill="${Utils.getCurrentTheme(store).intensityColors[0]}">
-				<animate attributeName="fill" dur="${totalDurationMs}ms" repeatCount="indefinite" 
-					values="${cellColorAnimation.values}" 
-					keyTimes="${cellColorAnimation.keyTimes}"/>
-			</rect>`;
+			const initialColor = store.gameHistory[0].grid[x][y].color;
+
+			// Check if this cell EVER changes color in the history
+			const hasColorChanges = store.gameHistory.some((state) => state.grid[x][y].color !== initialColor);
+
+			if (hasColorChanges) {
+				const cellColorAnimation = generateChangingValuesAnimation(store, generateCellColorValues(store, x, y));
+				svg += `<rect id="c-${x}-${y}" x="${cellX}" y="${cellY}" width="${CELL_SIZE}" height="${CELL_SIZE}" rx="5" fill="${initialColor}">
+					<animate attributeName="fill" dur="${totalDurationMs}ms" repeatCount="indefinite"
+						values="${cellColorAnimation.values}"
+						keyTimes="${cellColorAnimation.keyTimes}"/>
+				</rect>`;
+			} else {
+				// Static cell - no animation tags needed!
+				svg += `<rect id="c-${x}-${y}" x="${cellX}" y="${cellY}" width="${CELL_SIZE}" height="${CELL_SIZE}" rx="5" fill="${initialColor}" />`;
+			}
 		}
 	}
 
@@ -112,7 +122,7 @@ const generateAnimatedSVG = (store: StoreType) => {
 
 		// Create a group for the ghost
 		svg += `<g id="ghost${index}" transform="translate(0,0)">
-			<animateTransform attributeName="transform" type="translate" 
+			<animateTransform attributeName="transform" type="translate"
 				dur="${totalDurationMs}ms" repeatCount="indefinite"
 				keyTimes="${ghostPositionAnimation.keyTimes}"
 				values="${ghostPositionAnimation.values}"
@@ -137,7 +147,7 @@ const generateAnimatedSVG = (store: StoreType) => {
 			const initialVisibility = keyframes[0].visible ? 'visible' : 'hidden';
 
 			svg += `<use href="${href}" width="${CELL_SIZE}" height="${CELL_SIZE}" visibility="${initialVisibility}">
-				<animate attributeName="visibility" 
+				<animate attributeName="visibility"
 					dur="${totalDurationMs}ms" repeatCount="indefinite"
 					keyTimes="${keyTimes}"
 					values="${values}" />
