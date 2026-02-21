@@ -216,10 +216,10 @@ const generateAnimatedSVG = (store: StoreType) => {
 		svg += `<text x="10" y="${textY}">GEN: ${intelligence.generation}</text>`;
 		svg += `<text x="75" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
 		svg += `<text x="160" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
-		svg += `<text x="250" y="${textY}">RAD: ${dna.dangerRadius}</text>`;
-		svg += `<text x="320" y="${textY}">STUCK: ${dna.revisitPenalty}</text>`;
-		svg += `<text x="430" y="${textY}">HUNT: ${dna.scaredGhostWeight.toFixed(2)}</text>`;
-		svg += `<text x="530" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
+		svg += `<text x="240" y="${textY}">RAD: ${dna.dangerRadius}</text>`;
+		svg += `<text x="315" y="${textY}">STUCK: ${dna.revisitPenalty}</text>`;
+		svg += `<text x="450" y="${textY}">HUNT: ${dna.scaredGhostWeight.toFixed(2)}</text>`;
+		svg += `<text x="570" y="${textY}">FITNESS: ${intelligence.lastFitness.toFixed(0)}</text>`;
 		svg += `</g>`;
 	}
 
