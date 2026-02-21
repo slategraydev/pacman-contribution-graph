@@ -249,10 +249,19 @@ const updateGame = async (store: StoreType) => {
 
 /* ---------- snapshot helper ---------- */
 const pushSnapshot = (store: StoreType) => {
+	// Only store a minimal representation of the grid to save memory
+	// The full grid objects are redundant if only levels/colors change
+	const gridSnapshot = store.grid.map((row) =>
+		row.map((col) => ({
+			level: col.level,
+			color: col.color
+		}))
+	);
+
 	store.gameHistory.push({
 		pacman: { ...store.pacman },
 		ghosts: store.ghosts.map((g) => ({ ...g })),
-		grid: store.grid.map((row) => row.map((col) => ({ ...col })))
+		grid: gridSnapshot as any // Type cast because we only need these for rendering
 	});
 };
 
