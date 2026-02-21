@@ -217,7 +217,7 @@ const moveEyesToHome = (ghost: Ghost, store: StoreType) => {
 		ghost.respawnCounter = 1;
 		return;
 	}
-	const next = MovementUtils.findNextStepDijkstra({ x: ghost.x, y: ghost.y }, home);
+	const next = MovementUtils.findNextStepDijkstra({ x: ghost.x, y: ghost.y }, home, true);
 	if (next) {
 		ghost.direction = getDirectionFromDelta(next.x - ghost.x, next.y - ghost.y);
 		ghost.x = next.x;

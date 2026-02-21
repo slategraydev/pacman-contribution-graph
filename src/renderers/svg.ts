@@ -39,7 +39,7 @@ const generateAnimatedSVG = (store: StoreType) => {
 				continue;
 			}
 			const xPos = y * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
-			svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="12" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
+			svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="14" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
 			lastMonth = store.monthLabels[y];
 		}
 	}
@@ -212,7 +212,7 @@ const generateAnimatedSVG = (store: StoreType) => {
 		const textColor = theme.textColor;
 		const textY = svgHeight - 12;
 
-		svg += `<g id="intelligence-stats" font-size="12" fill="${textColor}">`;
+		svg += `<g id="intelligence-stats" font-size="14" fill="${textColor}">`;
 		svg += `<text x="10" y="${textY}">GEN: ${intelligence.generation}</text>`;
 		svg += `<text x="75" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
 		svg += `<text x="160" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;

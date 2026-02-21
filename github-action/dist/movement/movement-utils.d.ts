@@ -1,6 +1,6 @@
 import { Point2d } from '../types';
 export declare const MovementUtils: {
-    getValidMoves: (x: number, y: number, isGhost?: boolean) => [
+    getValidMoves: (x: number, y: number, isGhost?: boolean, isReturning?: boolean) => [
         number,
         number
     ][];
@@ -9,5 +9,5 @@ export declare const MovementUtils: {
      * Dijkstra's 4-way grid.
      * Returns the NEXT step (not the entire route) or null if none.
      */
-    findNextStepDijkstra(start: Point2d, target: Point2d): Point2d | null;
+    findNextStepDijkstra(start: Point2d, target: Point2d, isReturning?: boolean): Point2d | null;
 };

@@ -26983,7 +26983,7 @@ const hasWall = (x, y, direction) => {
 ;// CONCATENATED MODULE: ../src/movement/movement-utils.ts
 
 // Check for walls and grid edges
-const getValidMoves = (x, y, isGhost = false) => {
+const getValidMoves = (x, y, isGhost = false, isReturning = false) => {
     const directions = [
         [-1, 0],
         [1, 0],
@@ -26998,8 +26998,9 @@ const getValidMoves = (x, y, isGhost = false) => {
         }
         // Arcade Rule: Ghost House door is one-way (out only) for non-returning ghosts
         // Door is at (26, 2) relative to (26, 3) inside
-        if (isGhost && x === 26 && y === 2 && dy === 1) {
-            return false; // Cannot go down into the house from outside
+        // IF isReturning is true, we ALLOW them to enter.
+        if (isGhost && !isReturning && x === 26 && y === 2 && dy === 1) {
+            return false; // Cannot go down into the house from outside unless returning
         }
         // Block Pac-Man from entering the ghost house entirely
         if (!isGhost && x === 26 && y === 2 && dy === 1) {
@@ -27030,7 +27031,7 @@ const MovementUtils = {
      * Dijkstra's 4-way grid.
      * Returns the NEXT step (not the entire route) or null if none.
      */
-    findNextStepDijkstra(start, target) {
+    findNextStepDijkstra(start, target, isReturning = false) {
         if (start.x === target.x && start.y === target.y)
             return null;
         const pq = [{ ...start, cost: 0, path: [] }];
@@ -27039,7 +27040,7 @@ const MovementUtils = {
             // min-heap “manual”
             pq.sort((a, b) => a.cost - b.cost);
             const { x, y, cost, path } = pq.shift();
-            for (const [dx, dy] of getValidMoves(x, y)) {
+            for (const [dx, dy] of getValidMoves(x, y, true, isReturning)) {
                 const nx = x + dx, ny = y + dy, key = `${nx},${ny}`;
                 if (visited.has(key))
                     continue;
@@ -27264,7 +27265,7 @@ const moveEyesToHome = (ghost, store) => {
         ghost.respawnCounter = 1;
         return;
     }
-    const next = MovementUtils.findNextStepDijkstra({ x: ghost.x, y: ghost.y }, home);
+    const next = MovementUtils.findNextStepDijkstra({ x: ghost.x, y: ghost.y }, home, true);
     if (next) {
         ghost.direction = getDirectionFromDelta(next.x - ghost.x, next.y - ghost.y);
         ghost.x = next.x;
@@ -28021,7 +28022,7 @@ const generateAnimatedSVG = (store) => {
                 continue;
             }
             const xPos = y * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
-            svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="12" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
+            svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="14" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
             lastMonth = store.monthLabels[y];
         }
     }
@@ -28172,7 +28173,7 @@ const generateAnimatedSVG = (store) => {
         const dna = intelligence.dna;
         const textColor = theme.textColor;
         const textY = svgHeight - 12;
-        svg += `<g id="intelligence-stats" font-size="12" fill="${textColor}">`;
+        svg += `<g id="intelligence-stats" font-size="14" fill="${textColor}">`;
         svg += `<text x="10" y="${textY}">GEN: ${intelligence.generation}</text>`;
         svg += `<text x="75" y="${textY}">SAFE: ${dna.safetyWeight.toFixed(2)}</text>`;
         svg += `<text x="160" y="${textY}">GREED: ${dna.pointWeight.toFixed(2)}</text>`;
