@@ -137,14 +137,22 @@ const startGame = async (store: StoreType) => {
 
 	if (store.config.outputFormat === 'svg') {
 		const MAX_FRAMES = 5000; // Hard limit to prevent OOM
-		while (remainingCells() && store.frameCount < MAX_FRAMES) {
+		while (!store.gameEnded && remainingCells() && store.frameCount < MAX_FRAMES) {
 			await updateGame(store);
 		}
 		// snapshot final and force completion if we hit the limit
-		await updateGame(store, store.frameCount >= MAX_FRAMES);
+		if (!store.gameEnded) {
+			await updateGame(store, store.frameCount >= MAX_FRAMES);
+		}
 	} else {
 		clearInterval(store.gameInterval as number);
-		store.gameInterval = setInterval(() => updateGame(store), DELTA_TIME * store.config.gameSpeed) as unknown as number;
+		store.gameInterval = setInterval(() => {
+			if (!store.gameEnded) {
+				updateGame(store);
+			} else {
+				clearInterval(store.gameInterval as number);
+			}
+		}, DELTA_TIME * store.config.gameSpeed) as unknown as number;
 	}
 };
 
@@ -179,6 +187,7 @@ export const updateGame = async (store: StoreType, forceFinish = false) => {
 				placeGhosts(store);
 			} else {
 				// GAME OVER - Generate SVG and end game
+				store.gameEnded = true;
 				if (store.config.outputFormat === 'svg') {
 					const svg = SVG.generateAnimatedSVG(store);
 					store.config.svgCallback(svg);
@@ -204,6 +213,8 @@ export const updateGame = async (store: StoreType, forceFinish = false) => {
 		}
 		return;
 	}
+
+	if (store.gameEnded) return;
 
 	store.frameCount++;
 
@@ -250,6 +261,7 @@ export const updateGame = async (store: StoreType, forceFinish = false) => {
 	/* -------- end of game -------- */
 	const remaining = store.grid.some((row) => row.some((c) => c.commitsCount > 0));
 	if (!remaining || forceFinish) {
+		store.gameEnded = true;
 		if (store.config.outputFormat === 'svg') {
 			const svg = SVG.generateAnimatedSVG(store);
 			store.config.svgCallback(svg);

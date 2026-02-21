@@ -80,7 +80,8 @@ describe('updateGame death logic', () => {
 				gameOverCallback: jest.fn(),
 				pointsIncreasedCallback: jest.fn()
 			} as any,
-			useGithubThemeColor: true
+			useGithubThemeColor: true,
+			gameEnded: false
 		};
 	});
 

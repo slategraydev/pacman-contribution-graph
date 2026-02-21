@@ -64,6 +64,7 @@ export interface StoreType {
     }[];
     config: Config;
     useGithubThemeColor: boolean;
+    gameEnded: boolean;
 }
 export interface Config {
     platform: 'github' | 'gitlab';

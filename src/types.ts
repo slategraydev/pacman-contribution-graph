@@ -74,6 +74,7 @@ export interface StoreType {
 	}[];
 	config: Config;
 	useGithubThemeColor: boolean;
+	gameEnded: boolean;
 }
 
 /* ───────────────────────── Settings ───────────────────────────── */
