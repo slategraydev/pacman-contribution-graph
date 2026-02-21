@@ -179,6 +179,11 @@ const moveGhostInHouse = (ghost: Ghost, store: StoreType) => {
 		return;
 	}
 
+	// If ghost is currently waiting to respawn/release, don't bob yet
+	if (ghost.freezeCounter > 0) {
+		return;
+	}
+
 	// Arcade Feature: 1-grid vertical bobbing (between y=3 and y=4)
 	const topLimit = 3;
 	const bottomLimit = 4;
@@ -205,6 +210,7 @@ const moveEyesToHome = (ghost: Ghost, store: StoreType) => {
 	if (ghost.x === home.x && ghost.y === home.y) {
 		ghost.inHouse = true;
 		ghost.name = ghost.originalName || 'blinky'; // Restore original form
+		ghost.scared = false; // Ensure it's not scared when it becomes a ghost again
 		ghost.freezeCounter = 14; // Wait 2 seconds (150ms * 14 = 2100ms)
 		ghost.respawnCounter = 0;
 		ghost.respawning = false;

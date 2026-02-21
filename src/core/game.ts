@@ -5,7 +5,7 @@ import { Canvas } from '../renderers/canvas';
 import { SVG } from '../renderers/svg';
 import { GhostName, PlayerStyle, StoreType } from '../types';
 import { Utils } from '../utils/utils';
-import { DELTA_TIME, PACMAN_DEATH_DURATION, PACMAN_EAT_GHOST_PAUSE_DURATION } from './constants';
+import { DELTA_TIME, PACMAN_DEATH_DURATION, PACMAN_EAT_GHOST_PAUSE_DURATION, PACMAN_POWERUP_DURATION } from './constants';
 
 /* ---------- positioning helpers ---------- */
 
@@ -392,8 +392,8 @@ export const updateGame = async (store: StoreType, forceFinish = false, headless
 		if (store.pacman.powerupRemainingDuration === 0) {
 			store.ghosts.forEach((g) => {
 				// ONLY revert ghosts that are actually scared.
-				// If they are 'eyes', they MUST continue to the house.
-				if (g.scared && g.name !== 'eyes') {
+				// If they are 'eyes', they MUST continue to the house and will revert there.
+				if (g.name !== 'eyes') {
 					g.scared = false;
 				}
 			});
@@ -437,7 +437,7 @@ export const updateGame = async (store: StoreType, forceFinish = false, headless
 
 	const cell = store.grid[store.pacman.x]?.[store.pacman.y];
 	if (cell && cell.level === 'FOURTH_QUARTILE' && store.pacman.powerupRemainingDuration === 0) {
-		store.pacman.powerupRemainingDuration = 30;
+		store.pacman.powerupRemainingDuration = PACMAN_POWERUP_DURATION;
 		store.ghosts.forEach((g) => {
 			if (g.name !== 'eyes') {
 				g.scared = true;

@@ -27227,6 +27227,10 @@ const moveGhostInHouse = (ghost, store) => {
         }
         return;
     }
+    // If ghost is currently waiting to respawn/release, don't bob yet
+    if (ghost.freezeCounter > 0) {
+        return;
+    }
     // Arcade Feature: 1-grid vertical bobbing (between y=3 and y=4)
     const topLimit = 3;
     const bottomLimit = 4;
@@ -27254,6 +27258,7 @@ const moveEyesToHome = (ghost, store) => {
     if (ghost.x === home.x && ghost.y === home.y) {
         ghost.inHouse = true;
         ghost.name = ghost.originalName || 'blinky'; // Restore original form
+        ghost.scared = false; // Ensure it's not scared when it becomes a ghost again
         ghost.freezeCounter = 14; // Wait 2 seconds (150ms * 14 = 2100ms)
         ghost.respawnCounter = 0;
         ghost.respawning = false;
@@ -28221,22 +28226,24 @@ function mapGhostStateChanges(store, ghostIndex) {
         'eyes-right',
         'scared'
     ];
-    // Initialize all states as hidden
+    // Initialize all states as hidden at time 0
     allPossibleStates.forEach((state) => {
         stateChanges[state] = [{ time: 0, visible: false }];
     });
     const totalFrames = store.gameHistory.length;
-    // Get the initial ghost state from frame 1 if it exists (for immediate turning)
-    const initialGhost = totalFrames > 1 ? store.gameHistory[1].ghosts[ghostIndex] : store.gameHistory[0].ghosts[ghostIndex];
+    // Get the initial ghost state from frame 0
+    const initialGhost = store.gameHistory[0].ghosts[ghostIndex];
     if (!initialGhost)
         return stateChanges;
-    // Set the initial state correctly
-    const initialState = initialGhost.scared || (initialGhost.deathPauseDuration && initialGhost.deathPauseDuration > 0)
+    // Determine the initial state exactly as we do in the loop
+    const initialState = initialGhost.deathPauseDuration && initialGhost.deathPauseDuration > 0
         ? 'scared'
-        : initialGhost.name === 'eyes'
-            ? `eyes-${initialGhost.direction || 'right'}`
-            : `${initialGhost.name}-${initialGhost.direction || 'right'}`;
-    // Mark this state as visible initially
+        : initialGhost.scared
+            ? 'scared'
+            : initialGhost.name === 'eyes'
+                ? `eyes-${initialGhost.direction || 'right'}`
+                : `${initialGhost.name}-${initialGhost.direction || 'right'}`;
+    // Mark this state as visible at time 0 (overwriting the hidden init)
     stateChanges[initialState] = [{ time: 0, visible: true }];
     // Track last state
     let lastState = initialState;
@@ -28775,8 +28782,8 @@ const updateGame = async (store, forceFinish = false, headless = false) => {
         if (store.pacman.powerupRemainingDuration === 0) {
             store.ghosts.forEach((g) => {
                 // ONLY revert ghosts that are actually scared.
-                // If they are 'eyes', they MUST continue to the house.
-                if (g.scared && g.name !== 'eyes') {
+                // If they are 'eyes', they MUST continue to the house and will revert there.
+                if (g.name !== 'eyes') {
                     g.scared = false;
                 }
             });
@@ -28815,7 +28822,7 @@ const updateGame = async (store, forceFinish = false, headless = false) => {
     const pointEaten = PacmanMovement.movePacman(store);
     const cell = store.grid[store.pacman.x]?.[store.pacman.y];
     if (cell && cell.level === 'FOURTH_QUARTILE' && store.pacman.powerupRemainingDuration === 0) {
-        store.pacman.powerupRemainingDuration = 30;
+        store.pacman.powerupRemainingDuration = PACMAN_POWERUP_DURATION;
         store.ghosts.forEach((g) => {
             if (g.name !== 'eyes') {
                 g.scared = true;
@@ -29093,6 +29100,8 @@ const buildWalls = () => {
     setWall(4, 4, 'right', WHITE);
     setWall(4, 4, 'down', WHITE);
     setWall(3, 4, 'down', WHITE);
+    setWall(4, 5, 'down', RED);
+    setWall(3, 5, 'down', RED);
     // L
     setWall(6, 1, 'right', WHITE);
     setWall(6, 2, 'right', WHITE);
@@ -29100,6 +29109,8 @@ const buildWalls = () => {
     setWall(6, 4, 'right', WHITE);
     setWall(7, 4, 'down', WHITE);
     setWall(8, 4, 'down', WHITE);
+    setWall(7, 5, 'down', RED);
+    setWall(8, 5, 'down', RED);
     // A
     setWall(11, 0, 'down', WHITE);
     setWall(12, 0, 'down', WHITE);
@@ -29112,6 +29123,8 @@ const buildWalls = () => {
     setWall(12, 3, 'right', WHITE);
     setWall(12, 4, 'right', WHITE);
     setWall(11, 2, 'down', WHITE);
+    setWall(11, 5, 'down', RED);
+    setWall(12, 5, 'down', RED);
     // T
     setWall(15, 0, 'down', WHITE);
     setWall(16, 0, 'down', WHITE);
@@ -29119,6 +29132,8 @@ const buildWalls = () => {
     setWall(15, 2, 'right', WHITE);
     setWall(15, 3, 'right', WHITE);
     setWall(15, 4, 'right', WHITE);
+    setWall(15, 5, 'down', RED);
+    setWall(16, 5, 'down', RED);
     // E
     setWall(18, 1, 'right', WHITE);
     setWall(18, 2, 'right', WHITE);
@@ -29130,6 +29145,8 @@ const buildWalls = () => {
     setWall(20, 2, 'down', WHITE);
     setWall(19, 4, 'down', WHITE);
     setWall(20, 4, 'down', WHITE);
+    setWall(19, 5, 'down', RED);
+    setWall(20, 5, 'down', RED);
     // GRAY
     // G
     setWall(32, 0, 'down', WHITE);
@@ -29140,10 +29157,11 @@ const buildWalls = () => {
     setWall(31, 4, 'right', WHITE);
     setWall(32, 4, 'down', WHITE);
     setWall(33, 4, 'down', WHITE);
-    setWall(32, 2, 'down', WHITE);
     setWall(33, 2, 'down', WHITE);
     setWall(33, 3, 'right', WHITE);
     setWall(33, 4, 'right', WHITE);
+    setWall(32, 5, 'down', RED);
+    setWall(33, 5, 'down', RED);
     // R
     setWall(35, 1, 'right', WHITE);
     setWall(35, 2, 'right', WHITE);
@@ -29152,9 +29170,12 @@ const buildWalls = () => {
     setWall(36, 0, 'down', WHITE);
     setWall(37, 0, 'down', WHITE);
     setWall(37, 1, 'right', WHITE);
+    setWall(36, 2, 'down', WHITE);
     setWall(37, 2, 'down', WHITE);
     setWall(37, 3, 'right', WHITE);
     setWall(37, 4, 'right', WHITE);
+    setWall(36, 5, 'down', RED);
+    setWall(37, 5, 'down', RED);
     // A
     setWall(40, 0, 'down', WHITE);
     setWall(41, 0, 'down', WHITE);
@@ -29167,6 +29188,8 @@ const buildWalls = () => {
     setWall(41, 3, 'right', WHITE);
     setWall(41, 4, 'right', WHITE);
     setWall(40, 2, 'down', WHITE);
+    setWall(40, 5, 'down', RED);
+    setWall(41, 5, 'down', RED);
     // Y
     setWall(43, 1, 'right', WHITE);
     setWall(43, 2, 'right', WHITE);
@@ -29178,6 +29201,8 @@ const buildWalls = () => {
     setWall(44, 4, 'right', WHITE);
     setWall(44, 4, 'down', WHITE);
     setWall(45, 4, 'down', WHITE);
+    setWall(44, 5, 'down', RED);
+    setWall(45, 5, 'down', RED);
     // SMILEY FACE
     setWall(47, 1, 'right', YELLOW);
     setWall(47, 2, 'right', YELLOW);
@@ -29187,10 +29212,8 @@ const buildWalls = () => {
     setWall(49, 4, 'right', YELLOW);
     setWall(48, 4, 'down', YELLOW);
     setWall(49, 4, 'down', YELLOW);
-    // Horizontal line and framing
-    for (let x = 2; x <= 50; x++) {
-        setWall(x, 5, 'down', RED);
-    }
+    setWall(48, 5, 'down', RED);
+    setWall(49, 5, 'down', RED);
     // End vertical lines and dividers between letters
     const dividerXPositions = [1, 5, 9, 13, 17, 21, 30, 34, 38, 42, 50];
     dividerXPositions.forEach((x) => {

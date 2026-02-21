@@ -263,26 +263,28 @@ function mapGhostStateChanges(store: StoreType, ghostIndex: number) {
 		'scared'
 	];
 
-	// Initialize all states as hidden
+	// Initialize all states as hidden at time 0
 	allPossibleStates.forEach((state) => {
 		stateChanges[state] = [{ time: 0, visible: false }];
 	});
 
 	const totalFrames = store.gameHistory.length;
 
-	// Get the initial ghost state from frame 1 if it exists (for immediate turning)
-	const initialGhost = totalFrames > 1 ? store.gameHistory[1].ghosts[ghostIndex] : store.gameHistory[0].ghosts[ghostIndex];
+	// Get the initial ghost state from frame 0
+	const initialGhost = store.gameHistory[0].ghosts[ghostIndex];
 	if (!initialGhost) return stateChanges;
 
-	// Set the initial state correctly
+	// Determine the initial state exactly as we do in the loop
 	const initialState =
-		initialGhost.scared || (initialGhost.deathPauseDuration && initialGhost.deathPauseDuration > 0)
+		initialGhost.deathPauseDuration && initialGhost.deathPauseDuration > 0
 			? 'scared'
-			: initialGhost.name === 'eyes'
-				? `eyes-${initialGhost.direction || 'right'}`
-				: `${initialGhost.name}-${initialGhost.direction || 'right'}`;
+			: initialGhost.scared
+				? 'scared'
+				: initialGhost.name === 'eyes'
+					? `eyes-${initialGhost.direction || 'right'}`
+					: `${initialGhost.name}-${initialGhost.direction || 'right'}`;
 
-	// Mark this state as visible initially
+	// Mark this state as visible at time 0 (overwriting the hidden init)
 	stateChanges[initialState] = [{ time: 0, visible: true }];
 
 	// Track last state

@@ -19,6 +19,8 @@ const buildWalls = () => {
 	setWall(4, 4, 'right', WHITE);
 	setWall(4, 4, 'down', WHITE);
 	setWall(3, 4, 'down', WHITE);
+	setWall(4, 5, 'down', RED);
+	setWall(3, 5, 'down', RED);
 
 	// L
 	setWall(6, 1, 'right', WHITE);
@@ -27,6 +29,8 @@ const buildWalls = () => {
 	setWall(6, 4, 'right', WHITE);
 	setWall(7, 4, 'down', WHITE);
 	setWall(8, 4, 'down', WHITE);
+	setWall(7, 5, 'down', RED);
+	setWall(8, 5, 'down', RED);
 
 	// A
 	setWall(11, 0, 'down', WHITE);
@@ -40,6 +44,8 @@ const buildWalls = () => {
 	setWall(12, 3, 'right', WHITE);
 	setWall(12, 4, 'right', WHITE);
 	setWall(11, 2, 'down', WHITE);
+	setWall(11, 5, 'down', RED);
+	setWall(12, 5, 'down', RED);
 
 	// T
 	setWall(15, 0, 'down', WHITE);
@@ -48,6 +54,8 @@ const buildWalls = () => {
 	setWall(15, 2, 'right', WHITE);
 	setWall(15, 3, 'right', WHITE);
 	setWall(15, 4, 'right', WHITE);
+	setWall(15, 5, 'down', RED);
+	setWall(16, 5, 'down', RED);
 
 	// E
 	setWall(18, 1, 'right', WHITE);
@@ -60,6 +68,8 @@ const buildWalls = () => {
 	setWall(20, 2, 'down', WHITE);
 	setWall(19, 4, 'down', WHITE);
 	setWall(20, 4, 'down', WHITE);
+	setWall(19, 5, 'down', RED);
+	setWall(20, 5, 'down', RED);
 
 	// GRAY
 	// G
@@ -71,10 +81,11 @@ const buildWalls = () => {
 	setWall(31, 4, 'right', WHITE);
 	setWall(32, 4, 'down', WHITE);
 	setWall(33, 4, 'down', WHITE);
-	setWall(32, 2, 'down', WHITE);
 	setWall(33, 2, 'down', WHITE);
 	setWall(33, 3, 'right', WHITE);
 	setWall(33, 4, 'right', WHITE);
+	setWall(32, 5, 'down', RED);
+	setWall(33, 5, 'down', RED);
 
 	// R
 	setWall(35, 1, 'right', WHITE);
@@ -84,9 +95,12 @@ const buildWalls = () => {
 	setWall(36, 0, 'down', WHITE);
 	setWall(37, 0, 'down', WHITE);
 	setWall(37, 1, 'right', WHITE);
+	setWall(36, 2, 'down', WHITE);
 	setWall(37, 2, 'down', WHITE);
 	setWall(37, 3, 'right', WHITE);
 	setWall(37, 4, 'right', WHITE);
+	setWall(36, 5, 'down', RED);
+	setWall(37, 5, 'down', RED);
 
 	// A
 	setWall(40, 0, 'down', WHITE);
@@ -100,6 +114,8 @@ const buildWalls = () => {
 	setWall(41, 3, 'right', WHITE);
 	setWall(41, 4, 'right', WHITE);
 	setWall(40, 2, 'down', WHITE);
+	setWall(40, 5, 'down', RED);
+	setWall(41, 5, 'down', RED);
 
 	// Y
 	setWall(43, 1, 'right', WHITE);
@@ -112,6 +128,8 @@ const buildWalls = () => {
 	setWall(44, 4, 'right', WHITE);
 	setWall(44, 4, 'down', WHITE);
 	setWall(45, 4, 'down', WHITE);
+	setWall(44, 5, 'down', RED);
+	setWall(45, 5, 'down', RED);
 
 	// SMILEY FACE
 	setWall(47, 1, 'right', YELLOW);
@@ -122,11 +140,8 @@ const buildWalls = () => {
 	setWall(49, 4, 'right', YELLOW);
 	setWall(48, 4, 'down', YELLOW);
 	setWall(49, 4, 'down', YELLOW);
-
-	// Horizontal line and framing
-	for (let x = 2; x <= 50; x++) {
-		setWall(x, 5, 'down', RED);
-	}
+	setWall(48, 5, 'down', RED);
+	setWall(49, 5, 'down', RED);
 
 	// End vertical lines and dividers between letters
 	const dividerXPositions = [1, 5, 9, 13, 17, 21, 30, 34, 38, 42, 50];
