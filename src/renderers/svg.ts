@@ -64,15 +64,29 @@ const generateAnimatedSVG = (store: StoreType) => {
 	// Horizontal walls
 	for (let y = 0; y <= GRID_HEIGHT; y++) {
 		let runStart = null;
+		let runColor = null;
 		for (let x = 0; x <= GRID_WIDTH; x++) {
 			let active = x < GRID_WIDTH && WALLS.horizontal[x][y].active;
+			let currentColor = active ? WALLS.horizontal[x][y].color : null;
+
 			if (active && runStart === null) {
 				runStart = x;
+				runColor = currentColor;
+			} else if (active && runColor !== currentColor) {
+				// Color changed, end current run and start new one
+				if (runStart !== null) {
+					let length = x - runStart;
+					svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${runColor}"></rect>`;
+				}
+				runStart = x;
+				runColor = currentColor;
 			}
+
 			if ((!active || x === GRID_WIDTH) && runStart !== null) {
 				let length = x - runStart;
-				svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${Utils.getCurrentTheme(store).wallColor}"></rect>`;
+				svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${runColor}"></rect>`;
 				runStart = null;
+				runColor = null;
 			}
 		}
 	}
@@ -80,15 +94,29 @@ const generateAnimatedSVG = (store: StoreType) => {
 	// Vertical walls
 	for (let x = 0; x <= GRID_WIDTH; x++) {
 		let runStart = null;
+		let runColor = null;
 		for (let y = 0; y <= GRID_HEIGHT; y++) {
 			let active = y < GRID_HEIGHT && WALLS.vertical[x][y].active;
+			let currentColor = active ? WALLS.vertical[x][y].color : null;
+
 			if (active && runStart === null) {
 				runStart = y;
+				runColor = currentColor;
+			} else if (active && runColor !== currentColor) {
+				// Color changed, end current run and start new one
+				if (runStart !== null) {
+					let length = y - runStart;
+					svg += `<rect id="wv-${x}-${runStart}" x="${x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${GAP_SIZE}" height="${length * (CELL_SIZE + GAP_SIZE)}" fill="${runColor}"></rect>`;
+				}
+				runStart = y;
+				runColor = currentColor;
 			}
+
 			if ((!active || y === GRID_HEIGHT) && runStart !== null) {
 				let length = y - runStart;
-				svg += `<rect id="wv-${x}-${runStart}" x="${x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${GAP_SIZE}" height="${length * (CELL_SIZE + GAP_SIZE)}" fill="${Utils.getCurrentTheme(store).wallColor}"></rect>`;
+				svg += `<rect id="wv-${x}-${runStart}" x="${x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${GAP_SIZE}" height="${length * (CELL_SIZE + GAP_SIZE)}" fill="${runColor}"></rect>`;
 				runStart = null;
+				runColor = null;
 			}
 		}
 	}

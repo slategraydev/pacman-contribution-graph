@@ -33,33 +33,28 @@ const drawGrid = (store: StoreType) => {
 		}
 	}
 
-	ctx.fillStyle = Utils.getCurrentTheme(store).wallColor;
 	for (let x = 0; x <= GRID_WIDTH; x++) {
 		for (let y = 0; y <= GRID_HEIGHT; y++) {
 			// Draw horizontal walls
 			if (WALLS.horizontal[x][y].active) {
+				ctx.fillStyle = WALLS.horizontal[x][y].color;
 				ctx.fillRect(
 					x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE,
 					y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15,
 					CELL_SIZE + GAP_SIZE,
 					GAP_SIZE
 				);
-				// TODO: For drawing lines labels only
-				// ctx.fillStyle = '#000';
-				// ctx.fillText(WALLS.horizontal[x][y].id, x * (GAP_SIZE + CELL_SIZE), y * (GAP_SIZE + CELL_SIZE));
 			}
 
 			// Draw vertical walls
 			if (WALLS.vertical[x][y].active) {
+				ctx.fillStyle = WALLS.vertical[x][y].color;
 				ctx.fillRect(
 					x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE,
 					y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15,
 					GAP_SIZE,
 					CELL_SIZE + GAP_SIZE
 				);
-				// TODO: For drawing lines labels only
-				// ctx.fillStyle = '#000';
-				// ctx.fillText(WALLS.vertical[x][y].id, x * (GAP_SIZE + CELL_SIZE), (y + 1) * (GAP_SIZE + CELL_SIZE));
 			}
 		}
 	}

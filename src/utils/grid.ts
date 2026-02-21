@@ -16,15 +16,15 @@ const buildWalls = () => {
 	setWall(4, 4, 'down');
 
 	// Ghost House
-	setWall(25, 3, 'up');
-	setWall(27, 3, 'up');
-	setWall(25, 4, 'down');
-	setWall(26, 4, 'down');
-	setWall(27, 4, 'down');
-	setWall(25, 3, 'left');
-	setWall(25, 4, 'left');
-	setWall(27, 3, 'right');
-	setWall(27, 4, 'right');
+	setWall(25, 3, 'up', '#D51D1D');
+	setWall(27, 3, 'up', '#D51D1D');
+	setWall(25, 4, 'down', '#D51D1D');
+	setWall(26, 4, 'down', '#D51D1D');
+	setWall(27, 4, 'down', '#D51D1D');
+	setWall(25, 3, 'left', '#D51D1D');
+	setWall(25, 4, 'left', '#D51D1D');
+	setWall(27, 3, 'right', '#D51D1D');
+	setWall(27, 4, 'right', '#D51D1D');
 };
 
 export const Grid = {

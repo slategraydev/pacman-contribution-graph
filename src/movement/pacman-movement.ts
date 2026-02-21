@@ -8,12 +8,6 @@ const RECENT_POSITIONS_LIMIT = 5;
 const movePacman = (store: StoreType): boolean => {
 	if (store.pacman.deadRemainingDuration) return false;
 
-	// Classic arcade feature: Pac-Man pauses when eating a dot
-	if (store.pacman.pauseRemainingMs > 0) {
-		store.pacman.pauseRemainingMs -= DELTA_TIME;
-		return false;
-	}
-
 	const hasPowerup = !!store.pacman.powerupRemainingDuration;
 	const scaredGhosts = store.ghosts.filter((ghost) => ghost.scared);
 
@@ -312,9 +306,6 @@ const checkAndEatPoint = (store: StoreType): boolean => {
 		cell.level = 'NONE';
 		cell.color = theme.intensityColors[0];
 		cell.commitsCount = 0;
-
-		// Set pause (arcade stop-and-go)
-		store.pacman.pauseRemainingMs = 10;
 
 		return true;
 	}

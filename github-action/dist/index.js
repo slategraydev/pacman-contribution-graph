@@ -26926,37 +26926,38 @@ const GHOSTS = {
     }
 };
 const WALLS = {
-    horizontal: Array.from({ length: GRID_WIDTH + 1 }, () => Array.from({ length: GRID_HEIGHT + 1 }, () => ({ active: false }))),
-    vertical: Array.from({ length: GRID_WIDTH + 1 }, () => Array.from({ length: GRID_HEIGHT + 1 }, () => ({ active: false })))
+    horizontal: Array.from({ length: GRID_WIDTH + 1 }, () => Array.from({ length: GRID_HEIGHT + 1 }, () => ({ active: false, color: 'white' }))),
+    vertical: Array.from({ length: GRID_WIDTH + 1 }, () => Array.from({ length: GRID_HEIGHT + 1 }, () => ({ active: false, color: 'white' })))
 };
 /**
  * Places a wall relative to cell coordinates (1-based).
  * @param cellX 1-based x coordinate of the cell
  * @param cellY 1-based y coordinate of the cell
  * @param position 'up', 'down', 'left', or 'right' relative to that cell
+ * @param color Color of the wall (e.g. hex value or color name)
  */
-const setWall = (cellX, cellY, position) => {
+const setWall = (cellX, cellY, position, color = 'white') => {
     const x = cellX;
     const y = cellY;
     switch (position) {
         case 'up':
             if (x >= 0 && x < WALLS.horizontal.length && y >= 0 && y < WALLS.horizontal[0].length) {
-                WALLS.horizontal[x][y] = { active: true };
+                WALLS.horizontal[x][y] = { active: true, color };
             }
             break;
         case 'down':
             if (x >= 0 && x < WALLS.horizontal.length && y + 1 >= 0 && y + 1 < WALLS.horizontal[0].length) {
-                WALLS.horizontal[x][y + 1] = { active: true };
+                WALLS.horizontal[x][y + 1] = { active: true, color };
             }
             break;
         case 'left':
             if (x >= 0 && x < WALLS.vertical.length && y >= 0 && y < WALLS.vertical[0].length) {
-                WALLS.vertical[x][y] = { active: true };
+                WALLS.vertical[x][y] = { active: true, color };
             }
             break;
         case 'right':
             if (x + 1 >= 0 && x + 1 < WALLS.vertical.length && y >= 0 && y < WALLS.vertical[0].length) {
-                WALLS.vertical[x + 1][y] = { active: true };
+                WALLS.vertical[x + 1][y] = { active: true, color };
             }
             break;
     }
@@ -27421,11 +27422,6 @@ const RECENT_POSITIONS_LIMIT = 5;
 const movePacman = (store) => {
     if (store.pacman.deadRemainingDuration)
         return false;
-    // Classic arcade feature: Pac-Man pauses when eating a dot
-    if (store.pacman.pauseRemainingMs > 0) {
-        store.pacman.pauseRemainingMs -= DELTA_TIME;
-        return false;
-    }
     const hasPowerup = !!store.pacman.powerupRemainingDuration;
     const scaredGhosts = store.ghosts.filter((ghost) => ghost.scared);
     let targetPosition;
@@ -27674,8 +27670,6 @@ const checkAndEatPoint = (store) => {
         cell.level = 'NONE';
         cell.color = theme.intensityColors[0];
         cell.commitsCount = 0;
-        // Set pause (arcade stop-and-go)
-        store.pacman.pauseRemainingMs = 10;
         return true;
     }
     return false;
@@ -27845,22 +27839,17 @@ const drawGrid = (store) => {
             ctx.fill();
         }
     }
-    ctx.fillStyle = Utils.getCurrentTheme(store).wallColor;
     for (let x = 0; x <= GRID_WIDTH; x++) {
         for (let y = 0; y <= GRID_HEIGHT; y++) {
             // Draw horizontal walls
             if (WALLS.horizontal[x][y].active) {
+                ctx.fillStyle = WALLS.horizontal[x][y].color;
                 ctx.fillRect(x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE, y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15, CELL_SIZE + GAP_SIZE, GAP_SIZE);
-                // TODO: For drawing lines labels only
-                // ctx.fillStyle = '#000';
-                // ctx.fillText(WALLS.horizontal[x][y].id, x * (GAP_SIZE + CELL_SIZE), y * (GAP_SIZE + CELL_SIZE));
             }
             // Draw vertical walls
             if (WALLS.vertical[x][y].active) {
+                ctx.fillStyle = WALLS.vertical[x][y].color;
                 ctx.fillRect(x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE, y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15, GAP_SIZE, CELL_SIZE + GAP_SIZE);
-                // TODO: For drawing lines labels only
-                // ctx.fillStyle = '#000';
-                // ctx.fillText(WALLS.vertical[x][y].id, x * (GAP_SIZE + CELL_SIZE), (y + 1) * (GAP_SIZE + CELL_SIZE));
             }
         }
     }
@@ -28066,30 +28055,56 @@ const generateAnimatedSVG = (store) => {
     // Horizontal walls
     for (let y = 0; y <= GRID_HEIGHT; y++) {
         let runStart = null;
+        let runColor = null;
         for (let x = 0; x <= GRID_WIDTH; x++) {
             let active = x < GRID_WIDTH && WALLS.horizontal[x][y].active;
+            let currentColor = active ? WALLS.horizontal[x][y].color : null;
             if (active && runStart === null) {
                 runStart = x;
+                runColor = currentColor;
+            }
+            else if (active && runColor !== currentColor) {
+                // Color changed, end current run and start new one
+                if (runStart !== null) {
+                    let length = x - runStart;
+                    svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${runColor}"></rect>`;
+                }
+                runStart = x;
+                runColor = currentColor;
             }
             if ((!active || x === GRID_WIDTH) && runStart !== null) {
                 let length = x - runStart;
-                svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${Utils.getCurrentTheme(store).wallColor}"></rect>`;
+                svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${runColor}"></rect>`;
                 runStart = null;
+                runColor = null;
             }
         }
     }
     // Vertical walls
     for (let x = 0; x <= GRID_WIDTH; x++) {
         let runStart = null;
+        let runColor = null;
         for (let y = 0; y <= GRID_HEIGHT; y++) {
             let active = y < GRID_HEIGHT && WALLS.vertical[x][y].active;
+            let currentColor = active ? WALLS.vertical[x][y].color : null;
             if (active && runStart === null) {
                 runStart = y;
+                runColor = currentColor;
+            }
+            else if (active && runColor !== currentColor) {
+                // Color changed, end current run and start new one
+                if (runStart !== null) {
+                    let length = y - runStart;
+                    svg += `<rect id="wv-${x}-${runStart}" x="${x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${GAP_SIZE}" height="${length * (CELL_SIZE + GAP_SIZE)}" fill="${runColor}"></rect>`;
+                }
+                runStart = y;
+                runColor = currentColor;
             }
             if ((!active || y === GRID_HEIGHT) && runStart !== null) {
                 let length = y - runStart;
-                svg += `<rect id="wv-${x}-${runStart}" x="${x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${GAP_SIZE}" height="${length * (CELL_SIZE + GAP_SIZE)}" fill="${Utils.getCurrentTheme(store).wallColor}"></rect>`;
+                svg += `<rect id="wv-${x}-${runStart}" x="${x * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${GAP_SIZE}" height="${length * (CELL_SIZE + GAP_SIZE)}" fill="${runColor}"></rect>`;
                 runStart = null;
+                runColor = null;
             }
         }
     }
@@ -28398,7 +28413,6 @@ const placePacman = (store) => {
         totalPoints: 0,
         deadRemainingDuration: 0,
         powerupRemainingDuration: 0,
-        pauseRemainingMs: 0,
         recentPositions: []
     };
 };
@@ -28695,7 +28709,6 @@ const Store = {
         totalPoints: 0,
         deadRemainingDuration: 0,
         powerupRemainingDuration: 0,
-        pauseRemainingMs: 0,
         recentPositions: []
     },
     ghosts: [],
@@ -28860,15 +28873,15 @@ const buildWalls = () => {
     setWall(4, 4, 'right');
     setWall(4, 4, 'down');
     // Ghost House
-    setWall(25, 3, 'up');
-    setWall(27, 3, 'up');
-    setWall(25, 4, 'down');
-    setWall(26, 4, 'down');
-    setWall(27, 4, 'down');
-    setWall(25, 3, 'left');
-    setWall(25, 4, 'left');
-    setWall(27, 3, 'right');
-    setWall(27, 4, 'right');
+    setWall(25, 3, 'up', '#D51D1D');
+    setWall(27, 3, 'up', '#D51D1D');
+    setWall(25, 4, 'down', '#D51D1D');
+    setWall(26, 4, 'down', '#D51D1D');
+    setWall(27, 4, 'down', '#D51D1D');
+    setWall(25, 3, 'left', '#D51D1D');
+    setWall(25, 4, 'left', '#D51D1D');
+    setWall(27, 3, 'right', '#D51D1D');
+    setWall(27, 4, 'right', '#D51D1D');
 };
 const Grid = {
     buildWalls

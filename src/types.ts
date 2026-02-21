@@ -28,7 +28,6 @@ export interface Pacman {
 	totalPoints: number;
 	deadRemainingDuration: number;
 	powerupRemainingDuration: number;
-	pauseRemainingMs: number; // For sub-frame arcade pause
 	recentPositions: string[];
 	target?: Point2d;
 }

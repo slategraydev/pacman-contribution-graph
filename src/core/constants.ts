@@ -96,11 +96,15 @@ export const GHOSTS: {
 };
 
 export const WALLS: {
-	horizontal: { active: boolean }[][];
-	vertical: { active: boolean }[][];
+	horizontal: { active: boolean; color: string }[][];
+	vertical: { active: boolean; color: string }[][];
 } = {
-	horizontal: Array.from({ length: GRID_WIDTH + 1 }, () => Array.from({ length: GRID_HEIGHT + 1 }, () => ({ active: false }))),
-	vertical: Array.from({ length: GRID_WIDTH + 1 }, () => Array.from({ length: GRID_HEIGHT + 1 }, () => ({ active: false })))
+	horizontal: Array.from({ length: GRID_WIDTH + 1 }, () =>
+		Array.from({ length: GRID_HEIGHT + 1 }, () => ({ active: false, color: 'white' }))
+	),
+	vertical: Array.from({ length: GRID_WIDTH + 1 }, () =>
+		Array.from({ length: GRID_HEIGHT + 1 }, () => ({ active: false, color: 'white' }))
+	)
 };
 
 /**
@@ -108,30 +112,31 @@ export const WALLS: {
  * @param cellX 1-based x coordinate of the cell
  * @param cellY 1-based y coordinate of the cell
  * @param position 'up', 'down', 'left', or 'right' relative to that cell
+ * @param color Color of the wall (e.g. hex value or color name)
  */
-export const setWall = (cellX: number, cellY: number, position: 'up' | 'down' | 'left' | 'right') => {
+export const setWall = (cellX: number, cellY: number, position: 'up' | 'down' | 'left' | 'right', color: string = 'white') => {
 	const x = cellX;
 	const y = cellY;
 
 	switch (position) {
 		case 'up':
 			if (x >= 0 && x < WALLS.horizontal.length && y >= 0 && y < WALLS.horizontal[0].length) {
-				WALLS.horizontal[x][y] = { active: true };
+				WALLS.horizontal[x][y] = { active: true, color };
 			}
 			break;
 		case 'down':
 			if (x >= 0 && x < WALLS.horizontal.length && y + 1 >= 0 && y + 1 < WALLS.horizontal[0].length) {
-				WALLS.horizontal[x][y + 1] = { active: true };
+				WALLS.horizontal[x][y + 1] = { active: true, color };
 			}
 			break;
 		case 'left':
 			if (x >= 0 && x < WALLS.vertical.length && y >= 0 && y < WALLS.vertical[0].length) {
-				WALLS.vertical[x][y] = { active: true };
+				WALLS.vertical[x][y] = { active: true, color };
 			}
 			break;
 		case 'right':
 			if (x + 1 >= 0 && x + 1 < WALLS.vertical.length && y >= 0 && y < WALLS.vertical[0].length) {
-				WALLS.vertical[x + 1][y] = { active: true };
+				WALLS.vertical[x + 1][y] = { active: true, color };
 			}
 			break;
 	}

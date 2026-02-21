@@ -24,9 +24,11 @@ export declare const GHOSTS: {
 export declare const WALLS: {
     horizontal: {
         active: boolean;
+        color: string;
     }[][];
     vertical: {
         active: boolean;
+        color: string;
     }[][];
 };
 /**
@@ -34,6 +36,7 @@ export declare const WALLS: {
  * @param cellX 1-based x coordinate of the cell
  * @param cellY 1-based y coordinate of the cell
  * @param position 'up', 'down', 'left', or 'right' relative to that cell
+ * @param color Color of the wall (e.g. hex value or color name)
  */
-export declare const setWall: (cellX: number, cellY: number, position: 'up' | 'down' | 'left' | 'right') => void;
+export declare const setWall: (cellX: number, cellY: number, position: 'up' | 'down' | 'left' | 'right', color?: string) => void;
 export declare const hasWall: (x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') => boolean;

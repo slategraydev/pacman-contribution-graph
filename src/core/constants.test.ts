@@ -5,12 +5,12 @@ describe('Walls and constants', () => {
 		// reset WALLS
 		for (let x = 0; x < WALLS.horizontal.length; x++) {
 			for (let y = 0; y < WALLS.horizontal[0].length; y++) {
-				WALLS.horizontal[x][y] = { active: false };
+				WALLS.horizontal[x][y] = { active: false, color: 'white' };
 			}
 		}
 		for (let x = 0; x < WALLS.vertical.length; x++) {
 			for (let y = 0; y < WALLS.vertical[0].length; y++) {
-				WALLS.vertical[x][y] = { active: false };
+				WALLS.vertical[x][y] = { active: false, color: 'white' };
 			}
 		}
 	});
@@ -23,18 +23,21 @@ describe('Walls and constants', () => {
 	it('setWall toggles correct cells and hasWall reflects it', () => {
 		setWall(0, 0, 'up');
 		expect(WALLS.horizontal[0][0].active).toBe(true);
+		expect(WALLS.horizontal[0][0].color).toBe('white');
 		expect(hasWall(0, 0, 'up')).toBe(true);
 		expect(hasWall(0, 0, 'down')).toBe(false);
 
-		setWall(0, 0, 'down');
+		setWall(0, 0, 'down', '#ff0000');
 		expect(hasWall(0, 0, 'down')).toBe(true);
+		expect(WALLS.horizontal[0][1].color).toBe('#ff0000');
 
 		setWall(0, 0, 'left');
 		expect(WALLS.vertical[0][0].active).toBe(true);
 		expect(hasWall(0, 0, 'left')).toBe(true);
 		expect(hasWall(0, 0, 'right')).toBe(false);
 
-		setWall(0, 0, 'right');
+		setWall(0, 0, 'right', 'blue');
 		expect(hasWall(0, 0, 'right')).toBe(true);
+		expect(WALLS.vertical[1][0].color).toBe('blue');
 	});
 });
