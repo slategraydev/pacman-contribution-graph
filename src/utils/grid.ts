@@ -27,16 +27,16 @@ const setSymmetricWall = (x: number, y: number, direction: 'horizontal' | 'verti
 };
 
 const buildWalls = () => {
-	setSymmetricWall(4, 1, 'horizontal', 'xy', 'L1');
-	setSymmetricWall(5, 1, 'horizontal', 'xy', 'L1');
-	setSymmetricWall(3, 1, 'vertical', 'x', 'L2');
-	setSymmetricWall(3, 2, 'vertical', 'x', 'L2');
-	setSymmetricWall(4, 3, 'horizontal', 'xy', 'L3');
-	setSymmetricWall(4, 4, 'horizontal', 'xy', 'L3');
-	setSymmetricWall(5, 4, 'vertical', 'xy', 'L4');
-	setSymmetricWall(5, 5, 'vertical', 'xy', 'L4');
-	setSymmetricWall(4, 5, 'horizontal', 'xy', 'L5');
-	setSymmetricWall(5, 5, 'horizontal', 'xy', 'L5');
+	setWall(4, 1, 'horizontal', 'xy', 'L1');
+	setWall(5, 1, 'horizontal', 'xy', 'L1');
+	setWall(3, 1, 'vertical', 'x', 'L2');
+	setWall(3, 2, 'vertical', 'x', 'L2');
+	setWall(4, 3, 'horizontal', 'xy', 'L3');
+	setWall(4, 4, 'horizontal', 'xy', 'L3');
+	setWall(5, 4, 'vertical', 'xy', 'L4');
+	setWall(5, 5, 'vertical', 'xy', 'L4');
+	setWall(4, 5, 'horizontal', 'xy', 'L5');
+	setWall(5, 5, 'horizontal', 'xy', 'L5');
 
 	//	setSymmetricWall(, , 'horizontal', 'xy', 'L');
 	//	setSymmetricWall(, , 'vertical', 'xy', 'L');
