@@ -61,10 +61,24 @@ const generateAnimatedSVG = (store: StoreType) => {
 		}
 	}
 
-	// ... horizontal and vertical walls logic stays the same ...
+	// Horizontal walls
+	for (let y = 0; y <= GRID_HEIGHT; y++) {
+		let runStart = null;
+		for (let x = 0; x <= GRID_WIDTH; x++) {
+			let active = x < GRID_WIDTH && WALLS.horizontal[x][y].active;
+			if (active && runStart === null) {
+				runStart = x;
+			}
+			if ((!active || x === GRID_WIDTH) && runStart !== null) {
+				let length = x - runStart;
+				svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${Utils.getCurrentTheme(store).wallColor}"></rect>`;
+				runStart = null;
+			}
+		}
+	}
 
 	// Vertical walls
-	for (let x = 0; x < GRID_WIDTH; x++) {
+	for (let x = 0; x <= GRID_WIDTH; x++) {
 		let runStart = null;
 		for (let y = 0; y <= GRID_HEIGHT; y++) {
 			let active = y < GRID_HEIGHT && WALLS.vertical[x][y].active;

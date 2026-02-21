@@ -99,12 +99,8 @@ export const WALLS: {
 	horizontal: { active: boolean }[][];
 	vertical: { active: boolean }[][];
 } = {
-	horizontal: Array(GRID_WIDTH + 1)
-		.fill(null)
-		.map(() => Array(GRID_HEIGHT + 1).fill({ active: false })),
-	vertical: Array(GRID_WIDTH + 1)
-		.fill(null)
-		.map(() => Array(GRID_HEIGHT + 1).fill({ active: false }))
+	horizontal: Array.from({ length: GRID_WIDTH + 1 }, () => Array.from({ length: GRID_HEIGHT + 1 }, () => ({ active: false }))),
+	vertical: Array.from({ length: GRID_WIDTH + 1 }, () => Array.from({ length: GRID_HEIGHT + 1 }, () => ({ active: false })))
 };
 
 /**

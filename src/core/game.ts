@@ -229,7 +229,17 @@ const updateGame = async (store: StoreType, forceFinish = false) => {
 	if (cell && cell.level === 'FOURTH_QUARTILE' && store.pacman.powerupRemainingDuration === 0) {
 		store.pacman.powerupRemainingDuration = 30;
 		store.ghosts.forEach((g) => {
-			if (g.name !== 'eyes') g.scared = true;
+			if (g.name !== 'eyes') {
+				g.scared = true;
+				// Classic Pac-Man: Ghosts reverse direction immediately when scared
+				const opposite: Record<string, 'up' | 'down' | 'left' | 'right'> = {
+					up: 'down',
+					down: 'up',
+					left: 'right',
+					right: 'left'
+				};
+				g.direction = opposite[g.direction] || g.direction;
+			}
 		});
 	}
 
