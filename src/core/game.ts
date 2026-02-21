@@ -3,7 +3,7 @@ import { PacmanMovement } from '../movement/pacman-movement';
 import { MusicPlayer, Sound } from '../music-player';
 import { Canvas } from '../renderers/canvas';
 import { SVG } from '../renderers/svg';
-import { GhostName, StoreType } from '../types';
+import { GhostName, PlayerStyle, StoreType } from '../types';
 import { Utils } from '../utils/utils';
 import { DELTA_TIME, PACMAN_DEATH_DURATION } from './constants';
 
@@ -18,7 +18,8 @@ const placePacman = (store: StoreType) => {
 		totalPoints: 0,
 		deadRemainingDuration: 0,
 		powerupRemainingDuration: 0,
-		recentPositions: []
+		recentPositions: [],
+		lives: 3
 	};
 };
 
@@ -97,6 +98,10 @@ const stopGame = async (store: StoreType) => {
 };
 
 const startGame = async (store: StoreType) => {
+	// Randomize personality for every game generation (SVG or Canvas)
+	const styles = [PlayerStyle.CONSERVATIVE, PlayerStyle.AGGRESSIVE, PlayerStyle.OPPORTUNISTIC];
+	store.config.playerStyle = styles[Math.floor(Math.random() * styles.length)];
+
 	if (store.config.outputFormat == 'canvas') {
 		store.config.canvas = store.config.canvas;
 		Canvas.resizeCanvas(store);
@@ -168,8 +173,25 @@ export const updateGame = async (store: StoreType, forceFinish = false) => {
 		store.pacman.deadRemainingDuration--;
 
 		if (store.pacman.deadRemainingDuration === 0) {
-			resetPacman(store);
-			placeGhosts(store);
+			store.pacman.lives--;
+			if (store.pacman.lives > 0) {
+				resetPacman(store);
+				placeGhosts(store);
+			} else {
+				// GAME OVER - Generate SVG and end game
+				if (store.config.outputFormat === 'svg') {
+					const svg = SVG.generateAnimatedSVG(store);
+					store.config.svgCallback(svg);
+				}
+				if (store.config.outputFormat == 'canvas') {
+					Canvas.renderGameOver(store);
+					MusicPlayer.getInstance()
+						.play(Sound.BEGINNING)
+						.then(() => MusicPlayer.getInstance().stopDefaultSound());
+				}
+				store.config.gameOverCallback();
+				return;
+			}
 		}
 
 		// Snapshot and render the current (dead or reset) state, then pause logic

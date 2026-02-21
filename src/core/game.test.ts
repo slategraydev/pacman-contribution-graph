@@ -36,7 +36,8 @@ jest.mock('../movement/pacman-movement', () => ({
 
 jest.mock('../movement/ghosts-movement', () => ({
 	GhostsMovement: {
-		moveGhosts: jest.fn()
+		moveGhosts: jest.fn(),
+		resetMovement: jest.fn()
 	}
 }));
 
@@ -64,7 +65,8 @@ describe('updateGame death logic', () => {
 				totalPoints: 0,
 				deadRemainingDuration: 0,
 				powerupRemainingDuration: 0,
-				recentPositions: []
+				recentPositions: [],
+				lives: 3
 			},
 			ghosts: [],
 			grid: [[{ commitsCount: 1, color: 'green', level: 'FIRST_QUARTILE' }]],
@@ -112,5 +114,15 @@ describe('updateGame death logic', () => {
 		await updateGame(store);
 
 		expect(store.frameCount).toBe(initialFrameCount + 1); // Logic resumed
+	});
+
+	it('should end game when lives reach 0', async () => {
+		store.pacman.deadRemainingDuration = 1;
+		store.pacman.lives = 1;
+
+		await updateGame(store);
+
+		expect(store.pacman.lives).toBe(0);
+		expect(store.config.gameOverCallback).toHaveBeenCalled();
 	});
 });

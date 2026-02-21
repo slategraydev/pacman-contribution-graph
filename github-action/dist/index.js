@@ -27294,8 +27294,13 @@ const getPacmanDirection = (store) => {
     const ds = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] };
     return ds[store.pacman.direction] || [0, 0];
 };
+const resetMovement = () => {
+    currentMode = 'scatter';
+    modeTimer = 0;
+};
 const GhostsMovement = {
-    moveGhosts
+    moveGhosts,
+    resetMovement
 };
 
 ;// CONCATENATED MODULE: ../src/types.ts
@@ -27366,11 +27371,23 @@ const buildGrid = (store) => {
         const week = weeksBetween(startDate, date);
         if (week >= 0 && week < realWidth) {
             const theme = getCurrentTheme(store);
-            grid[week][day] = {
-                commitsCount: c.count,
-                color: theme.intensityColors[levelToIndex(c.level)],
-                level: c.level
-            };
+            // --- GHOST HOUSE PROTECTION ---
+            // Prevent dots from spawning inside the ghost house area
+            const isInGhostHouse = (week === 25 || week === 26 || week === 27) && (day === 3 || day === 4);
+            if (isInGhostHouse) {
+                grid[week][day] = {
+                    commitsCount: 0,
+                    color: theme.intensityColors[0],
+                    level: 'NONE'
+                };
+            }
+            else {
+                grid[week][day] = {
+                    commitsCount: c.count,
+                    color: theme.intensityColors[levelToIndex(c.level)],
+                    level: c.level
+                };
+            }
         }
     });
     store.grid = grid;
@@ -28401,6 +28418,7 @@ const SVG = {
 
 
 
+
 /* ---------- positioning helpers ---------- */
 const placePacman = (store) => {
     store.pacman = {
@@ -28411,10 +28429,12 @@ const placePacman = (store) => {
         totalPoints: 0,
         deadRemainingDuration: 0,
         powerupRemainingDuration: 0,
-        recentPositions: []
+        recentPositions: [],
+        lives: 3
     };
 };
 const placeGhosts = (store) => {
+    GhostsMovement.resetMovement();
     store.ghosts = [
         {
             x: 26,
@@ -28486,6 +28506,9 @@ const stopGame = async (store) => {
     clearInterval(store.gameInterval);
 };
 const startGame = async (store) => {
+    // Randomize personality for every game generation (SVG or Canvas)
+    const styles = [PlayerStyle.CONSERVATIVE, PlayerStyle.AGGRESSIVE, PlayerStyle.OPPORTUNISTIC];
+    store.config.playerStyle = styles[Math.floor(Math.random() * styles.length)];
     if (store.config.outputFormat == 'canvas') {
         store.config.canvas = store.config.canvas;
         Canvas.resizeCanvas(store);
@@ -28530,6 +28553,9 @@ const resetPacman = (store) => {
     store.pacman.x = 26;
     store.pacman.y = 5;
     store.pacman.direction = 'right';
+    store.pacman.points = 0;
+    store.pacman.powerupRemainingDuration = 0;
+    store.pacman.target = undefined;
     store.pacman.recentPositions = [];
 };
 const determineGhostName = (index) => {
@@ -28538,6 +28564,41 @@ const determineGhostName = (index) => {
 };
 /* ---------- update per frame ---------- */
 const updateGame = async (store, forceFinish = false) => {
+    /* -------- pacman timers (DEATH PAUSE) -------- */
+    if (store.pacman.deadRemainingDuration > 0) {
+        store.pacman.deadRemainingDuration--;
+        if (store.pacman.deadRemainingDuration === 0) {
+            store.pacman.lives--;
+            if (store.pacman.lives > 0) {
+                resetPacman(store);
+                placeGhosts(store);
+            }
+            else {
+                // GAME OVER - Generate SVG and end game
+                if (store.config.outputFormat === 'svg') {
+                    const svg = SVG.generateAnimatedSVG(store);
+                    store.config.svgCallback(svg);
+                }
+                if (store.config.outputFormat == 'canvas') {
+                    Canvas.renderGameOver(store);
+                    MusicPlayer.getInstance()
+                        .play(Sound.BEGINNING)
+                        .then(() => MusicPlayer.getInstance().stopDefaultSound());
+                }
+                store.config.gameOverCallback();
+                return;
+            }
+        }
+        // Snapshot and render the current (dead or reset) state, then pause logic
+        pushSnapshot(store, false);
+        if (store.config.outputFormat == 'canvas') {
+            Canvas.drawGrid(store);
+            Canvas.drawPacman(store);
+            Canvas.drawGhosts(store);
+            Canvas.drawSoundController(store);
+        }
+        return;
+    }
     store.frameCount++;
     /* ---- FRAME-SKIP restored ---- */
     if (!forceFinish && store.frameCount % store.config.gameSpeed !== 0) {
@@ -28545,13 +28606,6 @@ const updateGame = async (store, forceFinish = false) => {
         return;
     }
     /* -------- pacman timers -------- */
-    if (store.pacman.deadRemainingDuration > 0) {
-        store.pacman.deadRemainingDuration--;
-        if (store.pacman.deadRemainingDuration === 0) {
-            resetPacman(store);
-            placeGhosts(store);
-        }
-    }
     if (store.pacman.powerupRemainingDuration > 0) {
         store.pacman.powerupRemainingDuration--;
         if (store.pacman.powerupRemainingDuration === 0) {
@@ -28707,7 +28761,8 @@ const Store = {
         totalPoints: 0,
         deadRemainingDuration: 0,
         powerupRemainingDuration: 0,
-        recentPositions: []
+        recentPositions: [],
+        lives: 3
     },
     ghosts: [],
     grid: [],
@@ -28870,6 +28925,7 @@ const buildWalls = () => {
     setWall(4, 3, 'right');
     setWall(4, 4, 'right');
     setWall(4, 4, 'down');
+    setWall(3, 4, 'down');
     // Ghost House
     setWall(25, 3, 'up', '#D51D1D');
     setWall(27, 3, 'up', '#D51D1D');

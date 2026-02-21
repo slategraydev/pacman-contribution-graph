@@ -14,6 +14,7 @@ const buildWalls = () => {
 	setWall(4, 3, 'right');
 	setWall(4, 4, 'right');
 	setWall(4, 4, 'down');
+	setWall(3, 4, 'down');
 
 	// Ghost House
 	setWall(25, 3, 'up', '#D51D1D');

@@ -66,11 +66,24 @@ export const buildGrid = (store: StoreType) => {
 
 		if (week >= 0 && week < realWidth) {
 			const theme = getCurrentTheme(store);
-			grid[week][day] = {
-				commitsCount: c.count,
-				color: theme.intensityColors[levelToIndex(c.level)],
-				level: c.level
-			};
+
+			// --- GHOST HOUSE PROTECTION ---
+			// Prevent dots from spawning inside the ghost house area
+			const isInGhostHouse = (week === 25 || week === 26 || week === 27) && (day === 3 || day === 4);
+
+			if (isInGhostHouse) {
+				grid[week][day] = {
+					commitsCount: 0,
+					color: theme.intensityColors[0],
+					level: 'NONE'
+				};
+			} else {
+				grid[week][day] = {
+					commitsCount: c.count,
+					color: theme.intensityColors[levelToIndex(c.level)],
+					level: c.level
+				};
+			}
 		}
 	});
 

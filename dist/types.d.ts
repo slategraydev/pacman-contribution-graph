@@ -26,6 +26,7 @@ export interface Pacman {
     powerupRemainingDuration: number;
     recentPositions: string[];
     target?: Point2d;
+    lives: number;
 }
 export type GhostName = 'blinky' | 'clyde' | 'inky' | 'pinky' | 'eyes';
 export interface Ghost {
