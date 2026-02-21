@@ -270,11 +270,12 @@ function mapGhostStateChanges(store: StoreType, ghostIndex: number) {
 	if (!initialGhost) return stateChanges;
 
 	// Set the initial state correctly
-	const initialState = initialGhost.scared
-		? 'scared'
-		: initialGhost.name === 'eyes'
-			? `eyes-${initialGhost.direction || 'right'}`
-			: `${initialGhost.name}-${initialGhost.direction || 'right'}`;
+	const initialState =
+		initialGhost.scared || (initialGhost.deathPauseDuration && initialGhost.deathPauseDuration > 0)
+			? 'scared'
+			: initialGhost.name === 'eyes'
+				? `eyes-${initialGhost.direction || 'right'}`
+				: `${initialGhost.name}-${initialGhost.direction || 'right'}`;
 
 	// Mark this state as visible initially
 	stateChanges[initialState] = [{ time: 0, visible: true }];
@@ -298,11 +299,12 @@ function mapGhostStateChanges(store: StoreType, ghostIndex: number) {
 		const currentTime = frameIndex / (totalFrames - 1);
 
 		// Determine the current state
-		const currentState = ghost.scared
-			? 'scared'
-			: ghost.name === 'eyes'
-				? `eyes-${ghost.direction || 'right'}`
-				: `${ghost.name}-${ghost.direction || 'right'}`;
+		const currentState =
+			ghost.scared || (ghost.deathPauseDuration && ghost.deathPauseDuration > 0)
+				? 'scared'
+				: ghost.name === 'eyes'
+					? `eyes-${ghost.direction || 'right'}`
+					: `${ghost.name}-${ghost.direction || 'right'}`;
 
 		// If the status has changed
 		if (currentState !== lastState) {

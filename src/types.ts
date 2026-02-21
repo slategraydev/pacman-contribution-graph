@@ -49,6 +49,7 @@ export interface Ghost {
 	respawning?: boolean; // Whether the ghost is in 'eyes' mode returning home
 	respawnCounter: number; // Time to respawn after reaches home
 	freezeCounter: number; // Time ghost stays in base before going out
+	deathPauseDuration: number; // Delay before turning into eyes
 	justReleasedFromHouse: boolean; // If ghost just released from house, it can only walk thru the house door
 }
 

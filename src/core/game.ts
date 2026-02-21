@@ -37,6 +37,7 @@ const placeGhosts = (store: StoreType) => {
 			inHouse: false,
 			respawnCounter: 0,
 			freezeCounter: 0,
+			deathPauseDuration: 0,
 			justReleasedFromHouse: false
 		},
 		{
@@ -49,6 +50,7 @@ const placeGhosts = (store: StoreType) => {
 			inHouse: true,
 			respawnCounter: 0,
 			freezeCounter: 25,
+			deathPauseDuration: 0,
 			justReleasedFromHouse: false
 		},
 		{
@@ -61,6 +63,7 @@ const placeGhosts = (store: StoreType) => {
 			inHouse: true,
 			respawnCounter: 0,
 			freezeCounter: 75,
+			deathPauseDuration: 0,
 			justReleasedFromHouse: false
 		},
 		{
@@ -73,6 +76,7 @@ const placeGhosts = (store: StoreType) => {
 			inHouse: true,
 			respawnCounter: 0,
 			freezeCounter: 150,
+			deathPauseDuration: 0,
 			justReleasedFromHouse: false
 		}
 	];
@@ -317,6 +321,16 @@ export const updateGame = async (store: StoreType, forceFinish = false, headless
 	if (store.pacman.pauseRemainingDuration > 0) {
 		store.pacman.pauseRemainingDuration--;
 
+		// Also update ghosts death pause
+		store.ghosts.forEach((ghost) => {
+			if (ghost.deathPauseDuration > 0) {
+				ghost.deathPauseDuration--;
+				if (ghost.deathPauseDuration === 0) {
+					ghost.name = 'eyes';
+				}
+			}
+		});
+
 		if (headless) return;
 
 		// Snapshot and render the current state, then pause logic
@@ -468,17 +482,18 @@ const checkCollisions = (store: StoreType) => {
 	if (store.pacman.deadRemainingDuration || store.pacman.pauseRemainingDuration) return;
 
 	store.ghosts.forEach((ghost) => {
-		// If the ghost is eyes, there should be no collision
-		if (ghost.name === 'eyes') return;
+		// If the ghost is eyes or in death pause, there should be no collision
+		if (ghost.name === 'eyes' || ghost.deathPauseDuration > 0) return;
 
 		if (ghost.x === store.pacman.x && ghost.y === store.pacman.y) {
 			if (store.pacman.powerupRemainingDuration && ghost.scared) {
 				ghost.originalName = ghost.name;
-				ghost.name = 'eyes';
+				// ghost.name = 'eyes'; // Moved to game loop after deathPauseDuration
 				ghost.scared = false;
 				ghost.target = { x: 26, y: 3 };
 				store.pacman.points += 10;
 				store.pacman.pauseRemainingDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;
+				ghost.deathPauseDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;
 			} else {
 				store.pacman.points = 0;
 				store.pacman.powerupRemainingDuration = 0;

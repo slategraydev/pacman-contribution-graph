@@ -127,4 +127,29 @@ describe('updateGame death logic', () => {
 		expect(store.pacman.lives).toBe(0);
 		expect(store.config.gameOverCallback).toHaveBeenCalled();
 	});
+
+	it('should handle ghost death pause correctly', async () => {
+		store.pacman.pauseRemainingDuration = 1;
+		store.ghosts = [
+			{
+				x: 10,
+				y: 10,
+				name: 'blinky',
+				originalName: 'blinky',
+				direction: 'right',
+				scared: false,
+				inHouse: false,
+				respawnCounter: 0,
+				freezeCounter: 0,
+				deathPauseDuration: 1,
+				justReleasedFromHouse: false
+			}
+		];
+
+		await updateGame(store);
+
+		expect(store.ghosts[0].deathPauseDuration).toBe(0);
+		expect(store.ghosts[0].name).toBe('eyes');
+		expect(store.pacman.pauseRemainingDuration).toBe(0);
+	});
 });

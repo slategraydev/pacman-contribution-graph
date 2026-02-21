@@ -27903,7 +27903,7 @@ const drawGhosts = (store) => {
         const y = ghost.y * (CELL_SIZE + GAP_SIZE) + 15;
         const size = CELL_SIZE;
         const ctx = store.config.canvas.getContext('2d');
-        if (ghost.scared) {
+        if (ghost.scared || ghost.deathPauseDuration > 0) {
             if ("imgDate" in GHOSTS.scared) {
                 ctx.drawImage(getLoadedImage('scared', GHOSTS.scared.imgDate), x, y, size, size);
             }
@@ -28226,7 +28226,7 @@ function mapGhostStateChanges(store, ghostIndex) {
     if (!initialGhost)
         return stateChanges;
     // Set the initial state correctly
-    const initialState = initialGhost.scared
+    const initialState = initialGhost.scared || (initialGhost.deathPauseDuration && initialGhost.deathPauseDuration > 0)
         ? 'scared'
         : initialGhost.name === 'eyes'
             ? `eyes-${initialGhost.direction || 'right'}`
@@ -28249,7 +28249,7 @@ function mapGhostStateChanges(store, ghostIndex) {
         const ghost = targetState.ghosts[ghostIndex];
         const currentTime = frameIndex / (totalFrames - 1);
         // Determine the current state
-        const currentState = ghost.scared
+        const currentState = ghost.scared || (ghost.deathPauseDuration && ghost.deathPauseDuration > 0)
             ? 'scared'
             : ghost.name === 'eyes'
                 ? `eyes-${ghost.direction || 'right'}`
@@ -28455,6 +28455,7 @@ const placeGhosts = (store) => {
             inHouse: false,
             respawnCounter: 0,
             freezeCounter: 0,
+            deathPauseDuration: 0,
             justReleasedFromHouse: false
         },
         {
@@ -28467,6 +28468,7 @@ const placeGhosts = (store) => {
             inHouse: true,
             respawnCounter: 0,
             freezeCounter: 25,
+            deathPauseDuration: 0,
             justReleasedFromHouse: false
         },
         {
@@ -28479,6 +28481,7 @@ const placeGhosts = (store) => {
             inHouse: true,
             respawnCounter: 0,
             freezeCounter: 75,
+            deathPauseDuration: 0,
             justReleasedFromHouse: false
         },
         {
@@ -28491,6 +28494,7 @@ const placeGhosts = (store) => {
             inHouse: true,
             respawnCounter: 0,
             freezeCounter: 150,
+            deathPauseDuration: 0,
             justReleasedFromHouse: false
         }
     ];
@@ -28707,6 +28711,15 @@ const updateGame = async (store, forceFinish = false, headless = false) => {
     /* -------- pacman timers (GHOST EATEN PAUSE) -------- */
     if (store.pacman.pauseRemainingDuration > 0) {
         store.pacman.pauseRemainingDuration--;
+        // Also update ghosts death pause
+        store.ghosts.forEach((ghost) => {
+            if (ghost.deathPauseDuration > 0) {
+                ghost.deathPauseDuration--;
+                if (ghost.deathPauseDuration === 0) {
+                    ghost.name = 'eyes';
+                }
+            }
+        });
         if (headless)
             return;
         // Snapshot and render the current state, then pause logic
@@ -28843,17 +28856,18 @@ const checkCollisions = (store) => {
     if (store.pacman.deadRemainingDuration || store.pacman.pauseRemainingDuration)
         return;
     store.ghosts.forEach((ghost) => {
-        // If the ghost is eyes, there should be no collision
-        if (ghost.name === 'eyes')
+        // If the ghost is eyes or in death pause, there should be no collision
+        if (ghost.name === 'eyes' || ghost.deathPauseDuration > 0)
             return;
         if (ghost.x === store.pacman.x && ghost.y === store.pacman.y) {
             if (store.pacman.powerupRemainingDuration && ghost.scared) {
                 ghost.originalName = ghost.name;
-                ghost.name = 'eyes';
+                // ghost.name = 'eyes'; // Moved to game loop after deathPauseDuration
                 ghost.scared = false;
                 ghost.target = { x: 26, y: 3 };
                 store.pacman.points += 10;
                 store.pacman.pauseRemainingDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;
+                ghost.deathPauseDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;
             }
             else {
                 store.pacman.points = 0;
@@ -29056,6 +29070,44 @@ const buildWalls = () => {
     setWall(4, 4, 'right');
     setWall(4, 4, 'down');
     setWall(3, 4, 'down');
+    // L
+    setWall(6, 1, 'right');
+    setWall(6, 2, 'right');
+    setWall(6, 3, 'right');
+    setWall(6, 4, 'right');
+    setWall(7, 4, 'down');
+    setWall(8, 4, 'down');
+    // A
+    setWall(11, 0, 'down');
+    setWall(12, 0, 'down');
+    setWall(10, 1, 'right');
+    setWall(10, 2, 'right');
+    setWall(10, 3, 'right');
+    setWall(10, 4, 'right');
+    setWall(12, 1, 'right');
+    setWall(12, 2, 'right');
+    setWall(12, 3, 'right');
+    setWall(12, 4, 'right');
+    setWall(11, 2, 'down');
+    setWall(12, 2, 'down');
+    // T
+    setWall(15, 0, 'down');
+    setWall(16, 0, 'down');
+    setWall(15, 1, 'right');
+    setWall(15, 2, 'right');
+    setWall(15, 3, 'right');
+    setWall(15, 4, 'right');
+    // E
+    setWall(18, 1, 'right');
+    setWall(18, 2, 'right');
+    setWall(18, 3, 'right');
+    setWall(18, 4, 'right');
+    setWall(19, 0, 'down');
+    setWall(20, 0, 'down');
+    setWall(19, 2, 'down');
+    setWall(20, 2, 'down');
+    setWall(19, 4, 'down');
+    setWall(20, 4, 'down');
     // Ghost House
     setWall(25, 3, 'up', '#D51D1D');
     setWall(27, 3, 'up', '#D51D1D');

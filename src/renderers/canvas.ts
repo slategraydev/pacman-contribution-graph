@@ -129,7 +129,7 @@ const drawGhosts = (store: StoreType) => {
 		const size = CELL_SIZE;
 
 		const ctx = store.config.canvas.getContext('2d')!;
-		if (ghost.scared) {
+		if (ghost.scared || ghost.deathPauseDuration > 0) {
 			if ('imgDate' in GHOSTS.scared) {
 				ctx.drawImage(getLoadedImage('scared', GHOSTS.scared.imgDate), x, y, size, size);
 			}

@@ -42,6 +42,7 @@ export interface Ghost {
     respawning?: boolean;
     respawnCounter: number;
     freezeCounter: number;
+    deathPauseDuration: number;
     justReleasedFromHouse: boolean;
 }
 export interface GridCell {
