@@ -28435,7 +28435,6 @@ const SVG = {
 
 
 
-
 /* ---------- positioning helpers ---------- */
 const placePacman = (store) => {
     store.pacman = {
@@ -28578,6 +28577,8 @@ const startGame = async (store) => {
                 sandboxStore.grid = store.grid.map((row) => row.map((cell) => ({ ...cell })));
                 placePacman(sandboxStore);
                 placeGhosts(sandboxStore);
+                // Capture initial state for sandbox
+                pushSnapshot(sandboxStore, true);
                 // Run Headless Simulation
                 const MAX_FRAMES = 5000;
                 while (!sandboxStore.gameEnded && sandboxStore.frameCount < MAX_FRAMES) {
@@ -28586,7 +28587,7 @@ const startGame = async (store) => {
                 // Calculate Fitness: (Total Dots Eaten / Total Frames) * 1000
                 const dotsEaten = sandboxStore.pacman.totalPoints;
                 const fitness = (dotsEaten / (sandboxStore.frameCount || 1)) * 1000;
-                if (fitness > bestFitness) {
+                if (fitness > bestFitness || bestHistory.length === 0) {
                     bestFitness = fitness;
                     winnerDNA = competitor.dna;
                     bestHistory = sandboxStore.gameHistory;
@@ -28604,7 +28605,7 @@ const startGame = async (store) => {
             return;
         }
     }
-    // --- FINAL RENDERING RUN ---
+    // --- FINAL RENDERING RUN (Fallback/Canvas) ---
     if (store.config.outputFormat == 'canvas') {
         store.config.canvas = store.config.canvas;
         Canvas.resizeCanvas(store);
@@ -28613,7 +28614,8 @@ const startGame = async (store) => {
     store.frameCount = 0;
     store.gameHistory = []; // keeps clean
     store.ghosts.forEach((g) => (g.scared = false));
-    store.grid = Utils.createGridFromData(store);
+    // Grid is already initialized by start() in index.ts
+    // store.grid = Utils.createGridFromData(store);
     if (remainingCells()) {
         placePacman(store);
         placeGhosts(store);
