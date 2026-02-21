@@ -64,69 +64,70 @@ const buildWalls = () => {
 
 	// GRAY
 	// G
-	setWall(30, 0, 'down', YELLOW);
-	setWall(31, 0, 'down', YELLOW);
-	setWall(29, 1, 'right', YELLOW);
-	setWall(29, 2, 'right', YELLOW);
-	setWall(29, 3, 'right', YELLOW);
-	setWall(29, 4, 'right', YELLOW);
-	setWall(30, 4, 'down', YELLOW);
-	setWall(31, 4, 'down', YELLOW);
-	setWall(31, 2, 'down', YELLOW);
+	setWall(32, 0, 'down', YELLOW);
+	setWall(33, 0, 'down', YELLOW);
+	setWall(31, 1, 'right', YELLOW);
+	setWall(31, 2, 'right', YELLOW);
 	setWall(31, 3, 'right', YELLOW);
 	setWall(31, 4, 'right', YELLOW);
-
-	// R
-	setWall(33, 1, 'right', YELLOW);
-	setWall(33, 2, 'right', YELLOW);
+	setWall(32, 4, 'down', YELLOW);
+	setWall(33, 4, 'down', YELLOW);
+	setWall(33, 2, 'down', YELLOW);
 	setWall(33, 3, 'right', YELLOW);
 	setWall(33, 4, 'right', YELLOW);
-	setWall(35, 0, 'down', YELLOW);
+
+	// R
 	setWall(35, 1, 'right', YELLOW);
-	setWall(34, 2, 'down', YELLOW);
-	setWall(35, 2, 'down', YELLOW);
-	setWall(34, 3, 'right', YELLOW);
+	setWall(35, 2, 'right', YELLOW);
+	setWall(35, 3, 'right', YELLOW);
 	setWall(35, 4, 'right', YELLOW);
+	setWall(37, 0, 'down', YELLOW);
+	setWall(37, 1, 'right', YELLOW);
+	setWall(36, 2, 'down', YELLOW);
+	setWall(37, 2, 'down', YELLOW);
+	setWall(36, 3, 'right', YELLOW);
+	setWall(37, 4, 'right', YELLOW);
 
 	// A
-	setWall(38, 0, 'down', YELLOW);
-	setWall(39, 0, 'down', YELLOW);
-	setWall(37, 1, 'right', YELLOW);
-	setWall(37, 2, 'right', YELLOW);
-	setWall(37, 3, 'right', YELLOW);
-	setWall(37, 4, 'right', YELLOW);
+	setWall(40, 0, 'down', YELLOW);
+	setWall(41, 0, 'down', YELLOW);
 	setWall(39, 1, 'right', YELLOW);
 	setWall(39, 2, 'right', YELLOW);
 	setWall(39, 3, 'right', YELLOW);
 	setWall(39, 4, 'right', YELLOW);
-	setWall(38, 2, 'down', YELLOW);
+	setWall(41, 1, 'right', YELLOW);
+	setWall(41, 2, 'right', YELLOW);
+	setWall(41, 3, 'right', YELLOW);
+	setWall(41, 4, 'right', YELLOW);
+	setWall(40, 2, 'down', YELLOW);
+	setWall(41, 2, 'down', YELLOW);
 
 	// Y
-	setWall(41, 0, 'right', YELLOW);
-	setWall(41, 1, 'right', YELLOW);
 	setWall(43, 0, 'right', YELLOW);
 	setWall(43, 1, 'right', YELLOW);
-	setWall(42, 2, 'down', YELLOW);
-	setWall(42, 3, 'right', YELLOW);
-	setWall(42, 4, 'right', YELLOW);
-	setWall(42, 4, 'down', YELLOW);
-	setWall(43, 4, 'down', YELLOW);
+	setWall(45, 0, 'right', YELLOW);
+	setWall(45, 1, 'right', YELLOW);
+	setWall(44, 2, 'down', YELLOW);
+	setWall(44, 3, 'right', YELLOW);
+	setWall(44, 4, 'right', YELLOW);
+	setWall(44, 4, 'down', YELLOW);
+	setWall(45, 4, 'down', YELLOW);
 
 	// Horizontal line and framing
-	for (let x = 2; x <= 44; x++) {
+	for (let x = 1; x <= 46; x++) {
 		setWall(x, 5, 'down', GRAY);
 	}
 
 	// End vertical lines and dividers between letters
-	const dividerXPositions = [2, 5, 9, 13, 17, 25, 32, 36, 40];
+	const dividerXPositions = [1, 5, 9, 13, 17, 22, 31, 34, 38, 42];
 	dividerXPositions.forEach((x) => {
-		for (let y = 0; y <= 5; y++) {
+		for (let y = 1; y <= 5; y++) {
 			setWall(x, y, 'right', GRAY);
 		}
 	});
 	// Final right-most vertical line
-	for (let y = 0; y <= 5; y++) {
-		setWall(44, y, 'right', GRAY);
+	for (let y = 1; y <= 5; y++) {
+		setWall(46, y, 'right', GRAY);
 	}
 
 	// Ghost House
