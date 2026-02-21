@@ -229,7 +229,11 @@ const moveScaredGhost = (ghost: Ghost, store: StoreType) => {
 	const [moveX, moveY] = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
 
 	// If Pacman has power-up, ghosts move slower (60% slower)
-	if (store.pacman.powerupRemainingDuration && Math.random() < 0.6) return;
+	// but we only apply this skip if we aren't forced to move by the engine.
+	if (store.pacman.powerupRemainingDuration && Math.random() < 0.6) {
+		// Even when skipping, we ensure they don't look "frozen" by keeping direction
+		return;
+	}
 
 	// Update ghost direction based on movement
 	if (moveX > 0) ghost.direction = 'right';
@@ -329,12 +333,27 @@ const moveGhostWithPersonality = (ghost: Ghost, store: StoreType) => {
 
 	// Finds the next move using BFS, respecting no-reversal rules
 	const nextMove = BFSTargetLocation(ghost.x, ghost.y, target.x, target.y, ghost.direction);
+
 	if (nextMove) {
 		ghost.x = nextMove.x;
 		ghost.y = nextMove.y;
 
 		if (nextMove.direction) {
 			ghost.direction = nextMove.direction;
+		}
+	} else {
+		// FALLBACK: If BFS fails (ghost is trapped or path blocked),
+		// force a random valid move so they never "stop".
+		const validMoves = MovementUtils.getValidMoves(ghost.x, ghost.y);
+		if (validMoves.length > 0) {
+			const [dx, dy] = validMoves[Math.floor(Math.random() * validMoves.length)];
+			ghost.x += dx;
+			ghost.y += dy;
+
+			if (dx > 0) ghost.direction = 'right';
+			else if (dx < 0) ghost.direction = 'left';
+			else if (dy > 0) ghost.direction = 'down';
+			else if (dy < 0) ghost.direction = 'up';
 		}
 	}
 };

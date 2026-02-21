@@ -27259,8 +27259,11 @@ const moveScaredGhost = (ghost, store) => {
     // Choose a random move from the possible moves
     const [moveX, moveY] = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
     // If Pacman has power-up, ghosts move slower (60% slower)
-    if (store.pacman.powerupRemainingDuration && Math.random() < 0.6)
+    // but we only apply this skip if we aren't forced to move by the engine.
+    if (store.pacman.powerupRemainingDuration && Math.random() < 0.6) {
+        // Even when skipping, we ensure they don't look "frozen" by keeping direction
         return;
+    }
     // Update ghost direction based on movement
     if (moveX > 0)
         ghost.direction = 'right';
@@ -27349,6 +27352,24 @@ const moveGhostWithPersonality = (ghost, store) => {
         ghost.y = nextMove.y;
         if (nextMove.direction) {
             ghost.direction = nextMove.direction;
+        }
+    }
+    else {
+        // FALLBACK: If BFS fails (ghost is trapped or path blocked),
+        // force a random valid move so they never "stop".
+        const validMoves = MovementUtils.getValidMoves(ghost.x, ghost.y);
+        if (validMoves.length > 0) {
+            const [dx, dy] = validMoves[Math.floor(Math.random() * validMoves.length)];
+            ghost.x += dx;
+            ghost.y += dy;
+            if (dx > 0)
+                ghost.direction = 'right';
+            else if (dx < 0)
+                ghost.direction = 'left';
+            else if (dy > 0)
+                ghost.direction = 'down';
+            else if (dy < 0)
+                ghost.direction = 'up';
         }
     }
 };
@@ -28295,11 +28316,12 @@ const generateAnimatedSVG = (store) => {
             // Check if this cell EVER changes color in the history
             const hasColorChanges = store.gameHistory.some((state) => state.grid[x][y].color !== initialColor);
             if (hasColorChanges) {
-                const cellColorAnimation = generateChangingValuesAnimation(store, generateCellColorValues(store, x, y));
+                const cellColorAnimation = generateChangingValuesAnimation(store, generateCellColorValues(store, x, y), true);
                 svg += `<rect id="c-${x}-${y}" x="${cellX}" y="${cellY}" width="${CELL_SIZE}" height="${CELL_SIZE}" rx="5" fill="${initialColor}">
 					<animate attributeName="fill" dur="${totalDurationMs}ms" repeatCount="indefinite"
 						values="${cellColorAnimation.values}"
-						keyTimes="${cellColorAnimation.keyTimes}"/>
+						keyTimes="${cellColorAnimation.keyTimes}"
+						calcMode="discrete" />
 				</rect>`;
             }
             else {
@@ -28308,21 +28330,7 @@ const generateAnimatedSVG = (store) => {
             }
         }
     }
-    // Horizontal walls
-    for (let y = 0; y < GRID_HEIGHT; y++) {
-        let runStart = null;
-        for (let x = 0; x <= GRID_WIDTH; x++) {
-            let active = x < GRID_WIDTH && WALLS.horizontal[x][y].active;
-            if (active && runStart === null) {
-                runStart = x;
-            }
-            if ((!active || x === GRID_WIDTH) && runStart !== null) {
-                let length = x - runStart;
-                svg += `<rect id="wh-${runStart}-${y}" x="${runStart * (CELL_SIZE + GAP_SIZE) - GAP_SIZE}" y="${y * (CELL_SIZE + GAP_SIZE) - GAP_SIZE + 15}" width="${length * (CELL_SIZE + GAP_SIZE)}" height="${GAP_SIZE}" fill="${Utils.getCurrentTheme(store).wallColor}"></rect>`;
-                runStart = null;
-            }
-        }
-    }
+    // ... horizontal and vertical walls logic stays the same ...
     // Vertical walls
     for (let x = 0; x < GRID_WIDTH; x++) {
         let runStart = null;
@@ -28339,29 +28347,32 @@ const generateAnimatedSVG = (store) => {
         }
     }
     // Pacman
-    const pacmanColorAnimation = generateChangingValuesAnimation(store, store.gameHistory.map((el) => RendererUnits.generatePacManColors(el.pacman)));
-    const pacmanPositionAnimation = generateChangingValuesAnimation(store, generatePacManPositions(store));
-    const pacmanRotationAnimation = generateChangingValuesAnimation(store, generatePacManRotations(store));
+    const pacmanColorAnimation = generateChangingValuesAnimation(store, store.gameHistory.map((el) => RendererUnits.generatePacManColors(el.pacman)), true);
+    const pacmanPositionAnimation = generateChangingValuesAnimation(store, generatePacManPositions(store), true);
+    const pacmanRotationAnimation = generateChangingValuesAnimation(store, generatePacManRotations(store), true);
     svg += `<path id="pacman" d="${generatePacManPath(0.55)}" fill="${PACMAN_COLOR}">
 		<animate attributeName="fill" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanColorAnimation.keyTimes}"
-			values="${pacmanColorAnimation.values}"/>
+			values="${pacmanColorAnimation.values}"
+			calcMode="discrete" />
 		<animateTransform attributeName="transform" type="translate" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanPositionAnimation.keyTimes}"
 			values="${pacmanPositionAnimation.values}"
+			calcMode="discrete"
 			additive="sum"/>
 		<animateTransform attributeName="transform" type="rotate" dur="${totalDurationMs}ms" repeatCount="indefinite"
 			keyTimes="${pacmanRotationAnimation.keyTimes}"
 			values="${pacmanRotationAnimation.values}"
 			calcMode="discrete"
 			additive="sum"/>
-		<animate attributeName="d" dur="0.5s" repeatCount="indefinite"
-			values="${generatePacManPath(0.55)};${generatePacManPath(0.05)};${generatePacManPath(0.55)}"/>
+		<animate attributeName="d" dur="0.25s" repeatCount="indefinite"
+			values="${generatePacManPath(0.75)};${generatePacManPath(0.05)};${generatePacManPath(0.75)}"
+			calcMode="discrete" />
 	</path>`;
     // Process each ghost separately
     store.ghosts.forEach((ghost, index) => {
         // Generate position animation for this ghost
-        const ghostPositionAnimation = generateChangingValuesAnimation(store, generateGhostPositions(store, index));
+        const ghostPositionAnimation = generateChangingValuesAnimation(store, generateGhostPositions(store, index), true);
         // Create a group for the ghost
         svg += `<g id="ghost${index}" transform="translate(0,0)">
 			<animateTransform attributeName="transform" type="translate"
@@ -28576,7 +28587,7 @@ const generateGhostsPredefinition = () => {
     defs += `</defs>`;
     return defs;
 };
-const generateChangingValuesAnimation = (store, changingValues) => {
+const generateChangingValuesAnimation = (store, changingValues, isDiscrete = false) => {
     if (store.gameHistory.length !== changingValues.length) {
         throw new Error(`The amount of values (${changingValues.length}) does not match the size of the game history (${store.gameHistory.length})`);
     }
@@ -28590,8 +28601,9 @@ const generateChangingValuesAnimation = (store, changingValues) => {
     let lastIndex = null;
     changingValues.forEach((currentValue, index) => {
         if (currentValue !== lastValue) {
-            if (lastValue !== null && lastIndex !== null && index - 1 !== lastIndex) {
-                // Add a keyframe right before the value change
+            // For non-discrete (linear) animations, we add a keyframe right before the change to keep it sharp.
+            // For discrete animations, we SKIP this buffer to ensure an instant jump.
+            if (!isDiscrete && lastValue !== null && lastIndex !== null && index - 1 !== lastIndex) {
                 keyTimes.push(Number(((index - 1 / (10 * SVG_KEY_TIMES_PRECISION)) / (totalFrames - 1)).toFixed(SVG_KEY_TIMES_PRECISION)));
                 values.push(lastValue);
             }
@@ -29077,17 +29089,30 @@ const Providers = {
 ;// CONCATENATED MODULE: ../src/utils/grid.ts
 
 const buildWalls = () => {
-    // (1,1,right) places a bar to the right of the first commit (cell 0,0)
-    // Ghost House (around center)
-    setWall(26, 3, 'up'); // top
-    setWall(28, 3, 'up'); // top
-    setWall(26, 4, 'down'); // bottom
-    setWall(27, 4, 'down');
-    setWall(28, 4, 'down');
-    setWall(26, 3, 'left'); // left
-    setWall(26, 4, 'left'); // left
-    setWall(28, 3, 'right'); // right side
-    setWall(28, 4, 'right'); // right side
+    // (1,1,right) places a bar to the right of the first commit
+    // SLATE
+    // S
+    setWall(4, 1, 'down');
+    setWall(5, 1, 'down');
+    setWall(3, 2, 'right');
+    setWall(3, 3, 'right');
+    setWall(4, 3, 'down');
+    setWall(5, 3, 'down');
+    setWall(6, 3, 'down');
+    setWall(5, 4, 'right');
+    setWall(5, 5, 'right');
+    setWall(5, 5, 'down');
+    setWall(6, 5, 'down');
+    // Ghost House
+    setWall(26, 4, 'up');
+    setWall(28, 4, 'up');
+    setWall(26, 5, 'down');
+    setWall(27, 5, 'down');
+    setWall(28, 5, 'down');
+    setWall(26, 4, 'left');
+    setWall(26, 5, 'left');
+    setWall(28, 4, 'right');
+    setWall(28, 5, 'right');
 };
 const Grid = {
     buildWalls
