@@ -66,7 +66,7 @@ const moveGhosts = (store: StoreType) => {
 };
 
 const getTargetTileMove = (ghost: Ghost, target: Point2d, store: StoreType) => {
-	const validMoves = MovementUtils.getValidMoves(ghost.x, ghost.y);
+	const validMoves = MovementUtils.getValidMoves(ghost.x, ghost.y, true);
 
 	const filteredMoves = validMoves.filter(([dx, dy]) => {
 		if (ghost.direction === 'up' && dy > 0) return false;
@@ -109,7 +109,7 @@ const getTargetTileMove = (ghost: Ghost, target: Point2d, store: StoreType) => {
 
 		if (isStalker) {
 			// Lookahead bonus: check if this move opens up even better paths
-			const nextValid = MovementUtils.getValidMoves(nx, ny);
+			const nextValid = MovementUtils.getValidMoves(nx, ny, true);
 			let nextMin = Infinity;
 			for (const [ndx, ndy] of nextValid) {
 				const nnx = nx + ndx;

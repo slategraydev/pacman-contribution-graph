@@ -11,11 +11,9 @@ const buildWalls = () => {
 	setWall(2, 2, 'right');
 	setWall(3, 2, 'down');
 	setWall(4, 2, 'down');
-	setWall(5, 2, 'down');
 	setWall(4, 3, 'right');
 	setWall(4, 4, 'right');
 	setWall(4, 4, 'down');
-	setWall(5, 4, 'down');
 
 	// Ghost House
 	setWall(25, 3, 'up');

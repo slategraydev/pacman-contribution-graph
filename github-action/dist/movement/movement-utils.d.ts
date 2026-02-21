@@ -1,6 +1,6 @@
 import { Point2d } from '../types';
 export declare const MovementUtils: {
-    getValidMoves: (x: number, y: number) => [
+    getValidMoves: (x: number, y: number, isGhost?: boolean) => [
         number,
         number
     ][];

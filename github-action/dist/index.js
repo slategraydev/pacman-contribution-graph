@@ -26852,9 +26852,9 @@ const PACMAN_COLOR_POWERUP = 'red';
 const PACMAN_COLOR_DEAD = '#80808064';
 const GHOST_NAMES = (/* unused pure expression or super */ null && (['blinky', 'clyde', 'inky', 'pinky', 'eyes']));
 const MONTHS = (/* unused pure expression or super */ null && (['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']));
-const DELTA_TIME = 200;
-const PACMAN_DEATH_DURATION = 10;
-const PACMAN_POWERUP_DURATION = 15;
+const DELTA_TIME = 300; // 300ms per frame
+const PACMAN_DEATH_DURATION = 7;
+const PACMAN_POWERUP_DURATION = 10;
 /* ───────────── Official GitHub Palettes ─────────────
    5-color array: 0 = NONE … 4 = FOURTH_QUARTILE          */
 const GITHUB_LIGHT = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
@@ -26982,7 +26982,7 @@ const hasWall = (x, y, direction) => {
 ;// CONCATENATED MODULE: ../src/movement/movement-utils.ts
 
 // Check for walls and grid edges
-const getValidMoves = (x, y) => {
+const getValidMoves = (x, y, isGhost = false) => {
     const directions = [
         [-1, 0],
         [1, 0],
@@ -26993,6 +26993,15 @@ const getValidMoves = (x, y) => {
         const newX = x + dx;
         const newY = y + dy;
         if (newX < 0 || newX >= GRID_WIDTH || newY < 0 || newY >= GRID_HEIGHT) {
+            return false;
+        }
+        // Arcade Rule: Ghost House door is one-way (out only) for non-returning ghosts
+        // Door is at (26, 2) relative to (26, 3) inside
+        if (isGhost && x === 26 && y === 2 && dy === 1) {
+            return false; // Cannot go down into the house from outside
+        }
+        // Block Pac-Man from entering the ghost house entirely
+        if (!isGhost && x === 26 && y === 2 && dy === 1) {
             return false;
         }
         if (dx === -1) {
@@ -27106,7 +27115,7 @@ const moveGhosts = (store) => {
     }
 };
 const getTargetTileMove = (ghost, target, store) => {
-    const validMoves = MovementUtils.getValidMoves(ghost.x, ghost.y);
+    const validMoves = MovementUtils.getValidMoves(ghost.x, ghost.y, true);
     const filteredMoves = validMoves.filter(([dx, dy]) => {
         if (ghost.direction === 'up' && dy > 0)
             return false;
@@ -27145,7 +27154,7 @@ const getTargetTileMove = (ghost, target, store) => {
         let weight = Math.sqrt(Math.pow(target.x - nx, 2) + Math.pow(target.y - ny, 2));
         if (isStalker) {
             // Lookahead bonus: check if this move opens up even better paths
-            const nextValid = MovementUtils.getValidMoves(nx, ny);
+            const nextValid = MovementUtils.getValidMoves(nx, ny, true);
             let nextMin = Infinity;
             for (const [ndx, ndy] of nextValid) {
                 const nnx = nx + ndx;
@@ -28847,11 +28856,9 @@ const buildWalls = () => {
     setWall(2, 2, 'right');
     setWall(3, 2, 'down');
     setWall(4, 2, 'down');
-    setWall(5, 2, 'down');
     setWall(4, 3, 'right');
     setWall(4, 4, 'right');
     setWall(4, 4, 'down');
-    setWall(5, 4, 'down');
     // Ghost House
     setWall(25, 3, 'up');
     setWall(27, 3, 'up');

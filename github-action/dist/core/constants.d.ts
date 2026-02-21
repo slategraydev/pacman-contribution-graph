@@ -8,9 +8,9 @@ export declare const PACMAN_COLOR_POWERUP = "red";
 export declare const PACMAN_COLOR_DEAD = "#80808064";
 export declare const GHOST_NAMES: GhostName[];
 export declare const MONTHS: string[];
-export declare const DELTA_TIME = 200;
-export declare const PACMAN_DEATH_DURATION = 10;
-export declare const PACMAN_POWERUP_DURATION = 15;
+export declare const DELTA_TIME = 300;
+export declare const PACMAN_DEATH_DURATION = 7;
+export declare const PACMAN_POWERUP_DURATION = 10;
 export declare const GAME_THEMES: {
     [key in ThemeKeys]: GameTheme;
 };

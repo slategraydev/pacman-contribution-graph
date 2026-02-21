@@ -2,7 +2,7 @@ import { GRID_HEIGHT, GRID_WIDTH, WALLS } from '../core/constants';
 import { Point2d } from '../types';
 
 // Check for walls and grid edges
-const getValidMoves = (x: number, y: number): [number, number][] => {
+const getValidMoves = (x: number, y: number, isGhost = false): [number, number][] => {
 	const directions: [number, number][] = [
 		[-1, 0], // left
 		[1, 0], // right
@@ -14,6 +14,17 @@ const getValidMoves = (x: number, y: number): [number, number][] => {
 		const newY = y + dy;
 
 		if (newX < 0 || newX >= GRID_WIDTH || newY < 0 || newY >= GRID_HEIGHT) {
+			return false;
+		}
+
+		// Arcade Rule: Ghost House door is one-way (out only) for non-returning ghosts
+		// Door is at (26, 2) relative to (26, 3) inside
+		if (isGhost && x === 26 && y === 2 && dy === 1) {
+			return false; // Cannot go down into the house from outside
+		}
+
+		// Block Pac-Man from entering the ghost house entirely
+		if (!isGhost && x === 26 && y === 2 && dy === 1) {
 			return false;
 		}
 
