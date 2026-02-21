@@ -251,6 +251,12 @@ const getPacmanDirection = (store: StoreType): [number, number] => {
 	return ds[store.pacman.direction] || [0, 0];
 };
 
+const resetMovement = () => {
+	currentMode = 'scatter';
+	modeTimer = 0;
+};
+
 export const GhostsMovement = {
-	moveGhosts
+	moveGhosts,
+	resetMovement
 };

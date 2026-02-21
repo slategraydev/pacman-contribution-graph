@@ -23,6 +23,7 @@ const placePacman = (store: StoreType) => {
 };
 
 const placeGhosts = (store: StoreType) => {
+	GhostsMovement.resetMovement();
 	store.ghosts = [
 		{
 			x: 26,
@@ -148,6 +149,9 @@ const resetPacman = (store: StoreType) => {
 	store.pacman.x = 26;
 	store.pacman.y = 5;
 	store.pacman.direction = 'right';
+	store.pacman.points = 0;
+	store.pacman.powerupRemainingDuration = 0;
+	store.pacman.target = undefined;
 	store.pacman.recentPositions = [];
 };
 
