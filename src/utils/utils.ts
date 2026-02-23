@@ -48,8 +48,7 @@ export const buildGrid = (store: StoreType) => {
 	startDate.setUTCDate(endDate.getUTCDate() - 365);
 	startDate.setUTCDate(startDate.getUTCDate() - startDate.getUTCDay());
 
-	const realWidth = 53;
-	const grid = Array.from({ length: realWidth }, () =>
+	const grid = Array.from({ length: GRID_WIDTH }, () =>
 		Array.from({ length: GRID_HEIGHT }, () => ({
 			commitsCount: 0,
 			color: getCurrentTheme(store).intensityColors[0],
@@ -64,7 +63,7 @@ export const buildGrid = (store: StoreType) => {
 		const day = date.getUTCDay();
 		const week = weeksBetween(startDate, date);
 
-		if (week >= 0 && week < realWidth) {
+		if (week >= 0 && week < GRID_WIDTH) {
 			const theme = getCurrentTheme(store);
 
 			// --- GHOST HOUSE PROTECTION ---
@@ -96,16 +95,21 @@ export const buildMonthLabels = (store: StoreType) => {
 	startDate.setUTCDate(endDate.getUTCDate() - 365);
 	startDate.setUTCDate(startDate.getUTCDate() - startDate.getUTCDay());
 
-	const realWidth = weeksBetween(startDate, endDate) + 1;
-	const labels = Array(realWidth).fill('');
+	const labels = Array(GRID_WIDTH).fill('');
 
 	let lastMonth = '';
 
-	for (let week = 0; week < realWidth; week++) {
+	for (let week = 0; week < GRID_WIDTH; week++) {
 		const date = new Date(startDate);
 		date.setUTCDate(date.getUTCDate() + week * 7);
 
 		const currentMonth = date.toLocaleString('default', { month: 'short' });
+
+		// Skip the first month label to avoid redundancy (e.g., Feb ... Feb)
+		if (week === 0) {
+			lastMonth = currentMonth;
+			continue;
+		}
 
 		// Only enter the name if it has changed month in relation to the last one
 		if (currentMonth !== lastMonth) {
@@ -114,7 +118,7 @@ export const buildMonthLabels = (store: StoreType) => {
 		}
 	}
 
-	store.monthLabels = realWidth > GRID_WIDTH ? labels.slice(realWidth - GRID_WIDTH) : labels;
+	store.monthLabels = labels;
 };
 
 export const createGridFromData = (store: StoreType) => {
