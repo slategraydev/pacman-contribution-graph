@@ -29,18 +29,10 @@ const generateAnimatedSVG = (store: StoreType) => {
 	svg += generateGhostsPredefinition();
 
 	// Month labels
-	let lastMonth = '';
-	let skipFirst = true;
-	for (let y = 0; y < GRID_WIDTH; y++) {
-		if (store.monthLabels[y] !== lastMonth) {
-			if (skipFirst) {
-				skipFirst = false;
-				lastMonth = store.monthLabels[y];
-				continue;
-			}
-			const xPos = y * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
-			svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="14" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
-			lastMonth = store.monthLabels[y];
+	for (let x = 0; x < GRID_WIDTH; x++) {
+		if (store.monthLabels[x]) {
+			const xPos = x * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
+			svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="14" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[x]}</text>`;
 		}
 	}
 

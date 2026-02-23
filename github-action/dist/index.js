@@ -27860,12 +27860,10 @@ const drawGrid = (store) => {
     ctx.fillStyle = Utils.getCurrentTheme(store).textColor;
     ctx.font = '10px Arial';
     ctx.textAlign = 'center';
-    let lastMonth = '';
     for (let x = 0; x < GRID_WIDTH; x++) {
-        if (store.monthLabels[x] !== lastMonth) {
+        if (store.monthLabels[x]) {
             const xPos = x * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
             ctx.fillText(store.monthLabels[x], xPos, 10);
-            lastMonth = store.monthLabels[x];
         }
     }
 };
@@ -28027,18 +28025,10 @@ const generateAnimatedSVG = (store) => {
     svg += `<rect width="100%" height="100%" fill="${Utils.getCurrentTheme(store).gridBackground}"/>`;
     svg += generateGhostsPredefinition();
     // Month labels
-    let lastMonth = '';
-    let skipFirst = true;
-    for (let y = 0; y < GRID_WIDTH; y++) {
-        if (store.monthLabels[y] !== lastMonth) {
-            if (skipFirst) {
-                skipFirst = false;
-                lastMonth = store.monthLabels[y];
-                continue;
-            }
-            const xPos = y * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
-            svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="14" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[y]}</text>`;
-            lastMonth = store.monthLabels[y];
+    for (let x = 0; x < GRID_WIDTH; x++) {
+        if (store.monthLabels[x]) {
+            const xPos = x * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
+            svg += `<text x="${xPos}" y="20" text-anchor="middle" font-size="14" fill="${Utils.getCurrentTheme(store).textColor}">${store.monthLabels[x]}</text>`;
         }
     }
     // Grid

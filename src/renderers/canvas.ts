@@ -63,13 +63,10 @@ const drawGrid = (store: StoreType) => {
 	ctx.font = '10px Arial';
 	ctx.textAlign = 'center';
 
-	let lastMonth = '';
-
 	for (let x = 0; x < GRID_WIDTH; x++) {
-		if (store.monthLabels[x] !== lastMonth) {
+		if (store.monthLabels[x]) {
 			const xPos = x * (CELL_SIZE + GAP_SIZE) + CELL_SIZE / 2;
 			ctx.fillText(store.monthLabels[x], xPos, 10);
-			lastMonth = store.monthLabels[x];
 		}
 	}
 };
