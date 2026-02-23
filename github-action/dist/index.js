@@ -27357,8 +27357,7 @@ const buildGrid = (store) => {
     const startDate = new Date(endDate);
     startDate.setUTCDate(endDate.getUTCDate() - 365);
     startDate.setUTCDate(startDate.getUTCDate() - startDate.getUTCDay());
-    const realWidth = 53;
-    const grid = Array.from({ length: realWidth }, () => Array.from({ length: GRID_HEIGHT }, () => ({
+    const grid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => ({
         commitsCount: 0,
         color: getCurrentTheme(store).intensityColors[0],
         level: 'NONE'
@@ -27369,7 +27368,7 @@ const buildGrid = (store) => {
             return;
         const day = date.getUTCDay();
         const week = weeksBetween(startDate, date);
-        if (week >= 0 && week < realWidth) {
+        if (week >= 0 && week < GRID_WIDTH) {
             const theme = getCurrentTheme(store);
             // --- GHOST HOUSE PROTECTION ---
             // Prevent dots from spawning inside the ghost house area
@@ -27397,20 +27396,24 @@ const buildMonthLabels = (store) => {
     const startDate = new Date(endDate);
     startDate.setUTCDate(endDate.getUTCDate() - 365);
     startDate.setUTCDate(startDate.getUTCDate() - startDate.getUTCDay());
-    const realWidth = weeksBetween(startDate, endDate) + 1;
-    const labels = Array(realWidth).fill('');
+    const labels = Array(GRID_WIDTH).fill('');
     let lastMonth = '';
-    for (let week = 0; week < realWidth; week++) {
+    for (let week = 0; week < GRID_WIDTH; week++) {
         const date = new Date(startDate);
         date.setUTCDate(date.getUTCDate() + week * 7);
         const currentMonth = date.toLocaleString('default', { month: 'short' });
         // Only enter the name if it has changed month in relation to the last one
+        // We initialize lastMonth with the first week's month but DON'T set the label for week 0
+        if (week === 0) {
+            lastMonth = currentMonth;
+            continue;
+        }
         if (currentMonth !== lastMonth) {
             labels[week] = currentMonth;
             lastMonth = currentMonth;
         }
     }
-    store.monthLabels = realWidth > GRID_WIDTH ? labels.slice(realWidth - GRID_WIDTH) : labels;
+    store.monthLabels = labels;
 };
 const createGridFromData = (store) => {
     buildGrid(store);

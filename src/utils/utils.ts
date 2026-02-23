@@ -105,13 +105,13 @@ export const buildMonthLabels = (store: StoreType) => {
 
 		const currentMonth = date.toLocaleString('default', { month: 'short' });
 
-		// Skip the first month label to avoid redundancy (e.g., Feb ... Feb)
+		// Only enter the name if it has changed month in relation to the last one
+		// We initialize lastMonth with the first week's month but DON'T set the label for week 0
 		if (week === 0) {
 			lastMonth = currentMonth;
 			continue;
 		}
 
-		// Only enter the name if it has changed month in relation to the last one
 		if (currentMonth !== lastMonth) {
 			labels[week] = currentMonth;
 			lastMonth = currentMonth;
