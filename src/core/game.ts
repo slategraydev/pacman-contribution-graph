@@ -3,9 +3,10 @@ import { PacmanMovement } from '../movement/pacman-movement';
 import { MusicPlayer, Sound } from '../music-player';
 import { Canvas } from '../renderers/canvas';
 import { SVG } from '../renderers/svg';
-import { DNA, GhostName, GridCell, StoreType } from '../types';
+import { GhostName, StoreType } from '../types';
 import { Utils } from '../utils/utils';
 import { DELTA_TIME, PACMAN_DEATH_DURATION, PACMAN_EAT_GHOST_PAUSE_DURATION, PACMAN_POWERUP_DURATION } from './constants';
+import { calculateTournamentScore, cloneGrid, ensureIntelligence, evolveIntelligence, hasRemainingCells } from './evolution';
 
 /* ---------- positioning helpers ---------- */
 
@@ -104,131 +105,45 @@ const stopGame = async (store: StoreType) => {
 	clearInterval(store.gameInterval as number);
 };
 
-const DEFAULT_DNA: DNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
-
-const cloneGrid = (grid: GridCell[][]) => grid.map((row) => row.map((cell) => ({ ...cell })));
-
-const hasRemainingCells = (grid: GridCell[][]) => grid.some((row) => row.some((cell) => cell.commitsCount > 0));
-
-const calculateTournamentScore = (store: StoreType) => {
-	const commitsValue = store.pacman.totalPoints;
-	const dotsValue = store.pacman.dotsEaten * 10;
-	const huntValue = store.pacman.ghostsEaten * 200;
-	const survivalValue = store.pacman.lives * 100;
-	let score = ((commitsValue + dotsValue + huntValue + survivalValue) / (store.frameCount || 1)) * 1000;
-
-	if (!hasRemainingCells(store.grid)) {
-		score *= 2.0;
-	}
-
-	return score;
-};
-
 const startGame = async (store: StoreType) => {
-	// Initialize intelligence if missing
-	if (!store.config.intelligence) {
-		store.config.intelligence = {
-			generation: 1,
-			dna: { ...DEFAULT_DNA },
-			lastScore: 0,
-			benchmarkGrid: cloneGrid(store.grid)
-		};
-	} else {
-		// DNA Migration: Ensure all fields exist if loading from an older version
-		const dna = store.config.intelligence.dna;
-
-		// Generic fallback for other fields
-		store.config.intelligence.dna = { ...DEFAULT_DNA, ...dna };
-		store.config.intelligence.lastScore ||= 0;
-		if (!store.config.intelligence.benchmarkGrid || !hasRemainingCells(store.config.intelligence.benchmarkGrid)) {
-			store.config.intelligence.benchmarkGrid = cloneGrid(store.grid);
-		}
-	}
+	ensureIntelligence(store);
 
 	const remainingCells = () => hasRemainingCells(store.grid);
 
 	// --- THE DAILY TOURNAMENT (Evolutionary Step) ---
 	if (store.config.runEvolution && store.config.outputFormat === 'svg') {
-		// Increment generation every day the action runs
-		store.config.intelligence.generation++;
-
 		if (remainingCells()) {
-			const originalDNA = { ...store.config.intelligence.dna };
-			const benchmarkGrid = cloneGrid(store.config.intelligence.benchmarkGrid || store.grid);
-
-			// Helper to apply a random drift of ±10% to a value
-			const mutate = (val: number, intensity = 0.1) => {
-				const drift = 1 + (Math.random() * intensity * 2 - intensity);
-				let newVal = val * drift;
-				// If value is NaN or truly invalid, give it a baseline
-				if (isNaN(newVal) || newVal <= 0) newVal = 0.01;
-				// Hard floor of 0.01 ensures math stays alive for future drift
-				return Math.max(0.01, newVal);
-			};
-
-			// Define Mutations: Generate 100 competitors (Baseline + 99 Mutations)
-			const competitors = [{ name: 'Baseline', dna: { ...originalDNA } }];
-			for (let i = 0; i < 99; i++) {
-				competitors.push({
-					name: `Offspring ${String.fromCharCode(65 + (i % 26))}${i >= 26 ? Math.floor(i / 26) : ''}`,
-					dna: {
-						safetyWeight: mutate(originalDNA.safetyWeight),
-						pointWeight: mutate(originalDNA.pointWeight),
-						dangerRadius: Math.max(2, Math.round(mutate(originalDNA.dangerRadius))),
-						revisitPenalty: mutate(originalDNA.revisitPenalty),
-						scaredGhostWeight: mutate(originalDNA.scaredGhostWeight)
-					}
-				});
-			}
-
-			let bestScore = -1;
-			let winnerDNA = originalDNA;
-			let winnerName = 'Baseline';
-
-			for (const competitor of competitors) {
+			const result = await evolveIntelligence(store, async (dna, grid) => {
 				// Deep clone store for sandbox run, but preserve functions in config
 				const sandboxStore: StoreType = JSON.parse(JSON.stringify(store));
 				sandboxStore.config = {
 					...store.config,
 					intelligence: {
 						...store.config.intelligence!,
-						dna: competitor.dna
+						dna
 					}
 				};
-				sandboxStore.grid = cloneGrid(benchmarkGrid);
+				sandboxStore.grid = cloneGrid(grid);
+				sandboxStore.frameCount = 0;
+				sandboxStore.gameEnded = false;
+				sandboxStore.gameHistory = [];
 
 				placePacman(sandboxStore);
 				placeGhosts(sandboxStore);
 
-				// Capture initial state for sandbox
-				pushSnapshot(sandboxStore, true);
-
-				// Run Headless Simulation
 				const MAX_FRAMES = 5000;
 				while (!sandboxStore.gameEnded && sandboxStore.frameCount < MAX_FRAMES) {
 					await updateGame(sandboxStore, false, true); // true = headless
 				}
 
-				const score = calculateTournamentScore(sandboxStore);
+				return calculateTournamentScore(sandboxStore);
+			});
 
-				if (score > bestScore) {
-					bestScore = score;
-					winnerDNA = competitor.dna;
-					winnerName = competitor.name;
-				}
-			}
-
-			console.log(`🏆 Tournament winner: ${winnerName} (Score: ${bestScore.toFixed(2)})`);
+			const winnerDNA = store.config.intelligence!.dna;
+			console.log(`🏆 Tournament winner: ${result.winnerName} (Score: ${result.bestScore.toFixed(2)})`);
 			console.log(
 				`🧬 New DNA: SAFE=${winnerDNA.safetyWeight.toFixed(2)}, GREED=${winnerDNA.pointWeight.toFixed(2)}, RAD=${winnerDNA.dangerRadius.toFixed(2)}, HUNT=${winnerDNA.scaredGhostWeight.toFixed(2)}`
 			);
-
-			const previousBestScore = store.config.intelligence.lastScore || 0;
-
-			if (bestScore > previousBestScore) {
-				store.config.intelligence.dna = winnerDNA;
-				store.config.intelligence.lastScore = bestScore;
-			}
 		}
 	}
 

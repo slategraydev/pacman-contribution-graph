@@ -77,11 +77,18 @@ export interface DNA {
     revisitPenalty: number;
     scaredGhostWeight: number;
 }
+export interface EvolutionCandidate {
+    dna: DNA;
+    score: number;
+}
 export interface Intelligence {
     generation: number;
     dna: DNA;
     lastScore: number;
     benchmarkGrid?: GridCell[][];
+    benchmarks?: GridCell[][][];
+    population?: EvolutionCandidate[];
+    seed?: number;
 }
 export interface Config {
     platform: 'github' | 'gitlab';

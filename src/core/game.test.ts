@@ -294,6 +294,7 @@ describe('Game evolution intelligence', () => {
 
 		await Game.startGame(store);
 
-		expect(store.config.intelligence?.lastScore).toBe(315000);
+		expect(store.config.intelligence?.lastScore).toBe(313000);
+		expect(store.config.intelligence?.benchmarks?.length).toBe(2);
 	});
 });
