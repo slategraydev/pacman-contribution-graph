@@ -27432,11 +27432,12 @@ const Utils = {
 
 
 const RECENT_POSITIONS_LIMIT = 5;
+const DEFAULT_DNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
+const getDNA = (store) => store.config.intelligence?.dna || DEFAULT_DNA;
 const movePacman = (store) => {
     if (store.pacman.deadRemainingDuration)
         return false;
-    const hasPowerup = !!store.pacman.powerupRemainingDuration;
-    const scaredGhosts = store.ghosts.filter((ghost) => ghost.scared);
+    const dna = getDNA(store);
     let targetPosition;
     // Find a target position, ensuring it's never undefined
     try {
@@ -27445,7 +27446,7 @@ const movePacman = (store) => {
         // Check for immediate danger: Fleeing takes priority over everything if ghosts are too close
         let immediateDanger = false;
         let safestEscape = null;
-        const dangerThreshold = 4;
+        const dangerThreshold = Math.max(2, Math.round(dna.dangerRadius));
         const dangerousGhosts = store.ghosts.filter((g) => !g.scared &&
             g.name !== 'eyes' &&
             MovementUtils.calculateDistance(g.x, g.y, store.pacman.x, store.pacman.y) < dangerThreshold);
@@ -27458,7 +27459,7 @@ const movePacman = (store) => {
             safestEscape = {
                 x: avgX > GRID_WIDTH / 2 ? 0 : GRID_WIDTH - 1,
                 y: avgY > GRID_HEIGHT / 2 ? 0 : GRID_HEIGHT - 1,
-                value: 5000 // High priority to ensure lock
+                value: 5000 * dna.safetyWeight // High priority to ensure lock
             };
         }
         const currentTarget = store.pacman.target;
@@ -27503,13 +27504,7 @@ const findClosestScaredGhost = (store) => {
     }, { x: store.pacman.x, y: store.pacman.y, distance: Infinity });
     if (closest.distance === Infinity)
         return null;
-    const dna = store.config.intelligence?.dna || {
-        safetyWeight: 1.5,
-        pointWeight: 0.8,
-        dangerRadius: 7,
-        revisitPenalty: 100,
-        scaredGhostWeight: 3.0
-    };
+    const dna = getDNA(store);
     return {
         x: closest.x,
         y: closest.y,
@@ -27518,6 +27513,7 @@ const findClosestScaredGhost = (store) => {
     };
 };
 const findOptimalTarget = (store) => {
+    const dna = getDNA(store);
     const pointCells = [];
     for (let x = 0; x < GRID_WIDTH; x++) {
         for (let y = 0; y < GRID_HEIGHT; y++) {
@@ -27526,7 +27522,7 @@ const findOptimalTarget = (store) => {
                 const distance = MovementUtils.calculateDistance(x, y, store.pacman.x, store.pacman.y);
                 // Priority: Power-up (FOURTH_QUARTILE) > Regular commits
                 const levelMultiplier = cell.level === 'FOURTH_QUARTILE' ? 10 : 1;
-                const value = (cell.commitsCount * levelMultiplier) / (distance + 1);
+                const value = (cell.commitsCount * levelMultiplier * dna.pointWeight) / (distance + 1);
                 pointCells.push({ x, y, value });
             }
         }
@@ -27545,17 +27541,10 @@ const calculateOptimalPath = (store, target) => {
     ];
     const visited = new Set([`${store.pacman.x},${store.pacman.y}`]);
     const dangerMap = createDangerMap(store);
-    const maxDangerValue = 25; // Increased to match new danger radius
-    // Set weights according to intelligence DNA (or defaults)
-    const dna = store.config.intelligence?.dna || {
-        safetyWeight: 1.5,
-        pointWeight: 0.8,
-        dangerRadius: 7,
-        revisitPenalty: 100,
-        scaredGhostWeight: 3.0
-    };
+    const dna = getDNA(store);
     const safetyWeight = dna.safetyWeight;
     const pointWeight = dna.pointWeight;
+    const maxDangerValue = dna.dangerRadius * 3 + 4;
     while (queue.length > 0) {
         queue.sort((a, b) => b.score - a.score);
         const current = queue.shift();
@@ -27598,7 +27587,7 @@ const calculateOptimalPath = (store, target) => {
 const createDangerMap = (store) => {
     const map = new Map();
     const hasPowerup = !!store.pacman.powerupRemainingDuration;
-    const radius = store.config.intelligence?.dna.dangerRadius || 7;
+    const radius = getDNA(store).dangerRadius;
     store.ghosts.forEach((ghost) => {
         if (ghost.scared || ghost.name === 'eyes')
             return;
@@ -27665,6 +27654,7 @@ const checkAndEatPoint = (store) => {
     if (cell.level !== 'NONE') {
         store.pacman.totalPoints += cell.commitsCount;
         store.pacman.points++;
+        store.pacman.dotsEaten = (store.pacman.dotsEaten || 0) + 1;
         if (typeof store.config.pointsIncreasedCallback === 'function') {
             store.config.pointsIncreasedCallback(store.pacman.totalPoints);
         }
@@ -28447,6 +28437,8 @@ const placePacman = (store) => {
         direction: 'right',
         points: 0,
         totalPoints: 0,
+        dotsEaten: 0,
+        ghostsEaten: 0,
         deadRemainingDuration: 0,
         pauseRemainingDuration: 0,
         powerupRemainingDuration: 0,
@@ -28530,29 +28522,48 @@ const placeGhosts = (store) => {
 const stopGame = async (store) => {
     clearInterval(store.gameInterval);
 };
+const game_DEFAULT_DNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
+const cloneGrid = (grid) => grid.map((row) => row.map((cell) => ({ ...cell })));
+const hasRemainingCells = (grid) => grid.some((row) => row.some((cell) => cell.commitsCount > 0));
+const calculateTournamentScore = (store) => {
+    const commitsValue = store.pacman.totalPoints;
+    const dotsValue = store.pacman.dotsEaten * 10;
+    const huntValue = store.pacman.ghostsEaten * 200;
+    const survivalValue = store.pacman.lives * 100;
+    let score = ((commitsValue + dotsValue + huntValue + survivalValue) / (store.frameCount || 1)) * 1000;
+    if (!hasRemainingCells(store.grid)) {
+        score *= 2.0;
+    }
+    return score;
+};
 const startGame = async (store) => {
     // Initialize intelligence if missing
     if (!store.config.intelligence) {
         store.config.intelligence = {
             generation: 1,
-            dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 },
-            lastScore: 0
+            dna: { ...game_DEFAULT_DNA },
+            lastScore: 0,
+            benchmarkGrid: cloneGrid(store.grid)
         };
     }
     else {
         // DNA Migration: Ensure all fields exist if loading from an older version
         const dna = store.config.intelligence.dna;
         // Generic fallback for other fields
-        const defaultDNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
-        store.config.intelligence.dna = { ...defaultDNA, ...dna };
+        store.config.intelligence.dna = { ...game_DEFAULT_DNA, ...dna };
+        store.config.intelligence.lastScore ||= 0;
+        if (!store.config.intelligence.benchmarkGrid || !hasRemainingCells(store.config.intelligence.benchmarkGrid)) {
+            store.config.intelligence.benchmarkGrid = cloneGrid(store.grid);
+        }
     }
-    const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
+    const remainingCells = () => hasRemainingCells(store.grid);
     // --- THE DAILY TOURNAMENT (Evolutionary Step) ---
     if (store.config.runEvolution && store.config.outputFormat === 'svg') {
         // Increment generation every day the action runs
         store.config.intelligence.generation++;
         if (remainingCells()) {
             const originalDNA = { ...store.config.intelligence.dna };
+            const benchmarkGrid = cloneGrid(store.config.intelligence.benchmarkGrid || store.grid);
             // Helper to apply a random drift of ±10% to a value
             const mutate = (val, intensity = 0.1) => {
                 const drift = 1 + (Math.random() * intensity * 2 - intensity);
@@ -28580,7 +28591,6 @@ const startGame = async (store) => {
             let bestScore = -1;
             let winnerDNA = originalDNA;
             let winnerName = 'Baseline';
-            let bestHistory = [];
             for (const competitor of competitors) {
                 // Deep clone store for sandbox run, but preserve functions in config
                 const sandboxStore = JSON.parse(JSON.stringify(store));
@@ -28591,7 +28601,7 @@ const startGame = async (store) => {
                         dna: competitor.dna
                     }
                 };
-                sandboxStore.grid = store.grid.map((row) => row.map((cell) => ({ ...cell })));
+                sandboxStore.grid = cloneGrid(benchmarkGrid);
                 placePacman(sandboxStore);
                 placeGhosts(sandboxStore);
                 // Capture initial state for sandbox
@@ -28601,39 +28611,20 @@ const startGame = async (store) => {
                 while (!sandboxStore.gameEnded && sandboxStore.frameCount < MAX_FRAMES) {
                     await updateGame(sandboxStore, false, true); // true = headless
                 }
-                // --- REFINED SCORE METRIC ---
-                // 1. Commits Value (Contribution points)
-                const commitsValue = sandboxStore.pacman.totalPoints;
-                // 2. Ghost Hunt Bonus (Pacman.points includes dots + ghosts*10)
-                // We reward hunting by giving extra weight to the general score
-                const huntValue = sandboxStore.pacman.points * 10;
-                // 3. Survival Bonus (Reward keeping lives)
-                const survivalValue = sandboxStore.pacman.lives * 100;
-                let score = ((commitsValue + huntValue + survivalValue) / (sandboxStore.frameCount || 1)) * 1000;
-                // 4. Completion Bonus (Massive reward for clearing the board)
-                const isCleared = !sandboxStore.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
-                if (isCleared) {
-                    score *= 2.0; // Double score if board is cleared
-                }
-                if (score > bestScore || bestHistory.length === 0) {
+                const score = calculateTournamentScore(sandboxStore);
+                if (score > bestScore) {
                     bestScore = score;
                     winnerDNA = competitor.dna;
                     winnerName = competitor.name;
-                    bestHistory = sandboxStore.gameHistory;
                 }
             }
             console.log(`🏆 Tournament winner: ${winnerName} (Score: ${bestScore.toFixed(2)})`);
             console.log(`🧬 New DNA: SAFE=${winnerDNA.safetyWeight.toFixed(2)}, GREED=${winnerDNA.pointWeight.toFixed(2)}, RAD=${winnerDNA.dangerRadius.toFixed(2)}, HUNT=${winnerDNA.scaredGhostWeight.toFixed(2)}`);
-            // Update Intelligence with the winner
-            store.config.intelligence.dna = winnerDNA;
-            store.config.intelligence.lastScore = bestScore;
-            // REUSE the best history for the final SVG output to save CPU time
-            store.gameHistory = bestHistory;
-            store.gameEnded = true;
-            const svg = SVG.generateAnimatedSVG(store);
-            store.config.svgCallback(svg);
-            store.config.gameOverCallback();
-            return;
+            const previousBestScore = store.config.intelligence.lastScore || 0;
+            if (bestScore > previousBestScore) {
+                store.config.intelligence.dna = winnerDNA;
+                store.config.intelligence.lastScore = bestScore;
+            }
         }
     }
     // --- FINAL RENDERING RUN (Fallback/Canvas) ---
@@ -28898,6 +28889,7 @@ const checkCollisions = (store) => {
                 else
                     ghost.target = { x: 26, y: 4 }; // Blinky and Inky
                 store.pacman.points += 10;
+                store.pacman.ghostsEaten = (store.pacman.ghostsEaten || 0) + 1;
                 store.pacman.pauseRemainingDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;
                 ghost.deathPauseDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;
             }
@@ -28933,6 +28925,8 @@ const Store = {
         direction: 'right',
         points: 0,
         totalPoints: 0,
+        dotsEaten: 0,
+        ghostsEaten: 0,
         deadRemainingDuration: 0,
         pauseRemainingDuration: 0,
         powerupRemainingDuration: 0,

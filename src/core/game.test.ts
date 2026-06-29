@@ -1,5 +1,9 @@
 import { updateGame } from './game';
-import { StoreType } from '../types';
+import { Game } from './game';
+import { GridCell, StoreType } from '../types';
+import { PacmanMovement } from '../movement/pacman-movement';
+import { GRID_HEIGHT, GRID_WIDTH } from './constants';
+import { SVG } from '../renderers/svg';
 
 // Mock all external modules used in updateGame
 jest.mock('../renderers/canvas', () => ({
@@ -63,6 +67,8 @@ describe('updateGame death logic', () => {
 				direction: 'right',
 				points: 0,
 				totalPoints: 0,
+				dotsEaten: 0,
+				ghostsEaten: 0,
 				deadRemainingDuration: 0,
 				pauseRemainingDuration: 0,
 				powerupRemainingDuration: 0,
@@ -151,5 +157,143 @@ describe('updateGame death logic', () => {
 		expect(store.ghosts[0].deathPauseDuration).toBe(0);
 		expect(store.ghosts[0].name).toBe('eyes');
 		expect(store.pacman.pauseRemainingDuration).toBe(0);
+	});
+});
+
+describe('Game evolution intelligence', () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+	});
+
+	it('preserves a higher saved score when today tournament scores lower', async () => {
+		const previousScore = 999999999;
+		const previousDNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3 };
+		const grid: GridCell[][] = Array.from({ length: GRID_WIDTH }, () =>
+			Array.from({ length: GRID_HEIGHT }, () => ({ commitsCount: 0, color: '#000', level: 'NONE' }))
+		);
+		grid[0][0] = { commitsCount: 1, color: 'green', level: 'FIRST_QUARTILE' };
+
+		(PacmanMovement.movePacman as jest.Mock).mockImplementation((sandboxStore: StoreType) => {
+			sandboxStore.grid.forEach((row) =>
+				row.forEach((cell) => {
+					cell.commitsCount = 0;
+					cell.level = 'NONE';
+				})
+			);
+			return false;
+		});
+
+		const store = {
+			frameCount: 0,
+			contributions: [],
+			pacman: {
+				x: 0,
+				y: 0,
+				direction: 'right',
+				points: 0,
+				totalPoints: 0,
+				dotsEaten: 0,
+				ghostsEaten: 0,
+				deadRemainingDuration: 0,
+				pauseRemainingDuration: 0,
+				powerupRemainingDuration: 0,
+				recentPositions: [],
+				lives: 3
+			},
+			ghosts: [],
+			grid,
+			monthLabels: [],
+			pacmanMouthOpen: true,
+			gameInterval: 0,
+			gameHistory: [],
+			config: {
+				outputFormat: 'svg',
+				gameSpeed: 1,
+				runEvolution: true,
+				svgCallback: jest.fn(),
+				gameOverCallback: jest.fn(),
+				pointsIncreasedCallback: jest.fn(),
+				intelligence: {
+					generation: 7,
+					dna: previousDNA,
+					lastScore: previousScore
+				}
+			} as any,
+			useGithubThemeColor: true,
+			gameEnded: false
+		} as StoreType;
+
+		await Game.startGame(store);
+
+		expect(store.config.intelligence?.lastScore).toBe(previousScore);
+		expect(store.config.intelligence?.dna).toEqual(previousDNA);
+		expect(store.gameHistory.length).toBeGreaterThan(1);
+		expect(SVG.generateAnimatedSVG).toHaveBeenCalledWith(store);
+	});
+
+	it('scores evolution against the saved benchmark grid instead of todays grid', async () => {
+		const grid: GridCell[][] = Array.from({ length: GRID_WIDTH }, () =>
+			Array.from({ length: GRID_HEIGHT }, () => ({ commitsCount: 0, color: '#000', level: 'NONE' }))
+		);
+		const benchmarkGrid = grid.map((row) => row.map((cell) => ({ ...cell })));
+		grid[0][0] = { commitsCount: 1, color: 'green', level: 'FIRST_QUARTILE' };
+		benchmarkGrid[0][0] = { commitsCount: 5, color: 'green', level: 'FIRST_QUARTILE' };
+
+		(PacmanMovement.movePacman as jest.Mock).mockImplementation((sandboxStore: StoreType) => {
+			sandboxStore.pacman.totalPoints += sandboxStore.grid[0][0].commitsCount;
+			sandboxStore.pacman.dotsEaten = 1;
+			sandboxStore.grid.forEach((row) =>
+				row.forEach((cell) => {
+					cell.commitsCount = 0;
+					cell.level = 'NONE';
+				})
+			);
+			return false;
+		});
+
+		const store = {
+			frameCount: 0,
+			contributions: [],
+			pacman: {
+				x: 0,
+				y: 0,
+				direction: 'right',
+				points: 0,
+				totalPoints: 0,
+				dotsEaten: 0,
+				ghostsEaten: 0,
+				deadRemainingDuration: 0,
+				pauseRemainingDuration: 0,
+				powerupRemainingDuration: 0,
+				recentPositions: [],
+				lives: 3
+			},
+			ghosts: [],
+			grid,
+			monthLabels: [],
+			pacmanMouthOpen: true,
+			gameInterval: 0,
+			gameHistory: [],
+			config: {
+				outputFormat: 'svg',
+				gameSpeed: 1,
+				runEvolution: true,
+				svgCallback: jest.fn(),
+				gameOverCallback: jest.fn(),
+				pointsIncreasedCallback: jest.fn(),
+				intelligence: {
+					generation: 1,
+					dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3 },
+					lastScore: 0,
+					benchmarkGrid
+				}
+			} as any,
+			useGithubThemeColor: true,
+			gameEnded: false
+		} as StoreType;
+
+		await Game.startGame(store);
+
+		expect(store.config.intelligence?.lastScore).toBe(315000);
 	});
 });

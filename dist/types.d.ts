@@ -22,6 +22,8 @@ export interface Pacman {
     direction: 'right' | 'left' | 'up' | 'down';
     points: number;
     totalPoints: number;
+    dotsEaten: number;
+    ghostsEaten: number;
     deadRemainingDuration: number;
     pauseRemainingDuration: number;
     powerupRemainingDuration: number;
@@ -79,6 +81,7 @@ export interface Intelligence {
     generation: number;
     dna: DNA;
     lastScore: number;
+    benchmarkGrid?: GridCell[][];
 }
 export interface Config {
     platform: 'github' | 'gitlab';

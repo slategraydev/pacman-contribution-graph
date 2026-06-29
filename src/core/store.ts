@@ -9,6 +9,8 @@ export const Store: StoreType = {
 		direction: 'right',
 		points: 0,
 		totalPoints: 0,
+		dotsEaten: 0,
+		ghostsEaten: 0,
 		deadRemainingDuration: 0,
 		pauseRemainingDuration: 0,
 		powerupRemainingDuration: 0,

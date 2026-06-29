@@ -1,15 +1,17 @@
-import { DELTA_TIME, GRID_HEIGHT, GRID_WIDTH, PACMAN_POWERUP_DURATION } from '../core/constants';
-import { PlayerStyle, Point2d, StoreType } from '../types';
+import { GRID_HEIGHT, GRID_WIDTH, PACMAN_POWERUP_DURATION } from '../core/constants';
+import { DNA, Point2d, StoreType } from '../types';
 import { Utils } from '../utils/utils';
 import { MovementUtils } from './movement-utils';
 
 const RECENT_POSITIONS_LIMIT = 5;
+const DEFAULT_DNA: DNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
+
+const getDNA = (store: StoreType) => store.config.intelligence?.dna || DEFAULT_DNA;
 
 const movePacman = (store: StoreType): boolean => {
 	if (store.pacman.deadRemainingDuration) return false;
 
-	const hasPowerup = !!store.pacman.powerupRemainingDuration;
-	const scaredGhosts = store.ghosts.filter((ghost) => ghost.scared);
+	const dna = getDNA(store);
 
 	let targetPosition: Point2d & { value: number };
 
@@ -22,7 +24,7 @@ const movePacman = (store: StoreType): boolean => {
 		let immediateDanger = false;
 		let safestEscape: Point2d | null = null;
 
-		const dangerThreshold = 4;
+		const dangerThreshold = Math.max(2, Math.round(dna.dangerRadius));
 		const dangerousGhosts = store.ghosts.filter(
 			(g) =>
 				!g.scared &&
@@ -40,7 +42,7 @@ const movePacman = (store: StoreType): boolean => {
 			safestEscape = {
 				x: avgX > GRID_WIDTH / 2 ? 0 : GRID_WIDTH - 1,
 				y: avgY > GRID_HEIGHT / 2 ? 0 : GRID_HEIGHT - 1,
-				value: 5000 // High priority to ensure lock
+				value: 5000 * dna.safetyWeight // High priority to ensure lock
 			};
 		}
 
@@ -93,13 +95,7 @@ const findClosestScaredGhost = (store: StoreType): (Point2d & { value: number })
 
 	if (closest.distance === Infinity) return null;
 
-	const dna = store.config.intelligence?.dna || {
-		safetyWeight: 1.5,
-		pointWeight: 0.8,
-		dangerRadius: 7,
-		revisitPenalty: 100,
-		scaredGhostWeight: 3.0
-	};
+	const dna = getDNA(store);
 
 	return {
 		x: closest.x,
@@ -110,6 +106,7 @@ const findClosestScaredGhost = (store: StoreType): (Point2d & { value: number })
 };
 
 const findOptimalTarget = (store: StoreType): Point2d & { value: number } => {
+	const dna = getDNA(store);
 	const pointCells: { x: number; y: number; value: number }[] = [];
 
 	for (let x = 0; x < GRID_WIDTH; x++) {
@@ -120,7 +117,7 @@ const findOptimalTarget = (store: StoreType): Point2d & { value: number } => {
 
 				// Priority: Power-up (FOURTH_QUARTILE) > Regular commits
 				const levelMultiplier = cell.level === 'FOURTH_QUARTILE' ? 10 : 1;
-				const value = (cell.commitsCount * levelMultiplier) / (distance + 1);
+				const value = (cell.commitsCount * levelMultiplier * dna.pointWeight) / (distance + 1);
 
 				pointCells.push({ x, y, value });
 			}
@@ -145,19 +142,11 @@ const calculateOptimalPath = (store: StoreType, target: Point2d) => {
 	const visited = new Set<string>([`${store.pacman.x},${store.pacman.y}`]);
 	const dangerMap = createDangerMap(store);
 
-	const maxDangerValue = 25; // Increased to match new danger radius
-
-	// Set weights according to intelligence DNA (or defaults)
-	const dna = store.config.intelligence?.dna || {
-		safetyWeight: 1.5,
-		pointWeight: 0.8,
-		dangerRadius: 7,
-		revisitPenalty: 100,
-		scaredGhostWeight: 3.0
-	};
+	const dna = getDNA(store);
 
 	const safetyWeight = dna.safetyWeight;
 	const pointWeight = dna.pointWeight;
+	const maxDangerValue = dna.dangerRadius * 3 + 4;
 
 	while (queue.length > 0) {
 		queue.sort((a, b) => b.score - a.score);
@@ -211,7 +200,7 @@ const calculateOptimalPath = (store: StoreType, target: Point2d) => {
 const createDangerMap = (store: StoreType) => {
 	const map = new Map<string, number>();
 	const hasPowerup = !!store.pacman.powerupRemainingDuration;
-	const radius = store.config.intelligence?.dna.dangerRadius || 7;
+	const radius = getDNA(store).dangerRadius;
 
 	store.ghosts.forEach((ghost) => {
 		if (ghost.scared || ghost.name === 'eyes') return;
@@ -294,6 +283,7 @@ const checkAndEatPoint = (store: StoreType): boolean => {
 	if (cell.level !== 'NONE') {
 		store.pacman.totalPoints += cell.commitsCount;
 		store.pacman.points++;
+		store.pacman.dotsEaten = (store.pacman.dotsEaten || 0) + 1;
 		if (typeof store.config.pointsIncreasedCallback === 'function') {
 			store.config.pointsIncreasedCallback(store.pacman.totalPoints);
 		}

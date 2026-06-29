@@ -3,7 +3,7 @@ import { PacmanMovement } from '../movement/pacman-movement';
 import { MusicPlayer, Sound } from '../music-player';
 import { Canvas } from '../renderers/canvas';
 import { SVG } from '../renderers/svg';
-import { GhostName, PlayerStyle, StoreType } from '../types';
+import { DNA, GhostName, GridCell, StoreType } from '../types';
 import { Utils } from '../utils/utils';
 import { DELTA_TIME, PACMAN_DEATH_DURATION, PACMAN_EAT_GHOST_PAUSE_DURATION, PACMAN_POWERUP_DURATION } from './constants';
 
@@ -16,6 +16,8 @@ const placePacman = (store: StoreType) => {
 		direction: 'right',
 		points: 0,
 		totalPoints: 0,
+		dotsEaten: 0,
+		ghostsEaten: 0,
 		deadRemainingDuration: 0,
 		pauseRemainingDuration: 0,
 		powerupRemainingDuration: 0,
@@ -102,24 +104,48 @@ const stopGame = async (store: StoreType) => {
 	clearInterval(store.gameInterval as number);
 };
 
+const DEFAULT_DNA: DNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
+
+const cloneGrid = (grid: GridCell[][]) => grid.map((row) => row.map((cell) => ({ ...cell })));
+
+const hasRemainingCells = (grid: GridCell[][]) => grid.some((row) => row.some((cell) => cell.commitsCount > 0));
+
+const calculateTournamentScore = (store: StoreType) => {
+	const commitsValue = store.pacman.totalPoints;
+	const dotsValue = store.pacman.dotsEaten * 10;
+	const huntValue = store.pacman.ghostsEaten * 200;
+	const survivalValue = store.pacman.lives * 100;
+	let score = ((commitsValue + dotsValue + huntValue + survivalValue) / (store.frameCount || 1)) * 1000;
+
+	if (!hasRemainingCells(store.grid)) {
+		score *= 2.0;
+	}
+
+	return score;
+};
+
 const startGame = async (store: StoreType) => {
 	// Initialize intelligence if missing
 	if (!store.config.intelligence) {
 		store.config.intelligence = {
 			generation: 1,
-			dna: { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 },
-			lastScore: 0
+			dna: { ...DEFAULT_DNA },
+			lastScore: 0,
+			benchmarkGrid: cloneGrid(store.grid)
 		};
 	} else {
 		// DNA Migration: Ensure all fields exist if loading from an older version
 		const dna = store.config.intelligence.dna;
 
 		// Generic fallback for other fields
-		const defaultDNA = { safetyWeight: 1.5, pointWeight: 0.8, dangerRadius: 7, revisitPenalty: 100, scaredGhostWeight: 3.0 };
-		store.config.intelligence.dna = { ...defaultDNA, ...dna };
+		store.config.intelligence.dna = { ...DEFAULT_DNA, ...dna };
+		store.config.intelligence.lastScore ||= 0;
+		if (!store.config.intelligence.benchmarkGrid || !hasRemainingCells(store.config.intelligence.benchmarkGrid)) {
+			store.config.intelligence.benchmarkGrid = cloneGrid(store.grid);
+		}
 	}
 
-	const remainingCells = () => store.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
+	const remainingCells = () => hasRemainingCells(store.grid);
 
 	// --- THE DAILY TOURNAMENT (Evolutionary Step) ---
 	if (store.config.runEvolution && store.config.outputFormat === 'svg') {
@@ -128,6 +154,7 @@ const startGame = async (store: StoreType) => {
 
 		if (remainingCells()) {
 			const originalDNA = { ...store.config.intelligence.dna };
+			const benchmarkGrid = cloneGrid(store.config.intelligence.benchmarkGrid || store.grid);
 
 			// Helper to apply a random drift of ±10% to a value
 			const mutate = (val: number, intensity = 0.1) => {
@@ -157,7 +184,6 @@ const startGame = async (store: StoreType) => {
 			let bestScore = -1;
 			let winnerDNA = originalDNA;
 			let winnerName = 'Baseline';
-			let bestHistory: any[] = [];
 
 			for (const competitor of competitors) {
 				// Deep clone store for sandbox run, but preserve functions in config
@@ -169,7 +195,7 @@ const startGame = async (store: StoreType) => {
 						dna: competitor.dna
 					}
 				};
-				sandboxStore.grid = store.grid.map((row) => row.map((cell) => ({ ...cell })));
+				sandboxStore.grid = cloneGrid(benchmarkGrid);
 
 				placePacman(sandboxStore);
 				placeGhosts(sandboxStore);
@@ -183,28 +209,12 @@ const startGame = async (store: StoreType) => {
 					await updateGame(sandboxStore, false, true); // true = headless
 				}
 
-				// --- REFINED SCORE METRIC ---
-				// 1. Commits Value (Contribution points)
-				const commitsValue = sandboxStore.pacman.totalPoints;
-				// 2. Ghost Hunt Bonus (Pacman.points includes dots + ghosts*10)
-				// We reward hunting by giving extra weight to the general score
-				const huntValue = sandboxStore.pacman.points * 10;
-				// 3. Survival Bonus (Reward keeping lives)
-				const survivalValue = sandboxStore.pacman.lives * 100;
+				const score = calculateTournamentScore(sandboxStore);
 
-				let score = ((commitsValue + huntValue + survivalValue) / (sandboxStore.frameCount || 1)) * 1000;
-
-				// 4. Completion Bonus (Massive reward for clearing the board)
-				const isCleared = !sandboxStore.grid.some((row) => row.some((cell) => cell.commitsCount > 0));
-				if (isCleared) {
-					score *= 2.0; // Double score if board is cleared
-				}
-
-				if (score > bestScore || bestHistory.length === 0) {
+				if (score > bestScore) {
 					bestScore = score;
 					winnerDNA = competitor.dna;
 					winnerName = competitor.name;
-					bestHistory = sandboxStore.gameHistory;
 				}
 			}
 
@@ -213,18 +223,12 @@ const startGame = async (store: StoreType) => {
 				`🧬 New DNA: SAFE=${winnerDNA.safetyWeight.toFixed(2)}, GREED=${winnerDNA.pointWeight.toFixed(2)}, RAD=${winnerDNA.dangerRadius.toFixed(2)}, HUNT=${winnerDNA.scaredGhostWeight.toFixed(2)}`
 			);
 
-			// Update Intelligence with the winner
-			store.config.intelligence.dna = winnerDNA;
-			store.config.intelligence.lastScore = bestScore;
+			const previousBestScore = store.config.intelligence.lastScore || 0;
 
-			// REUSE the best history for the final SVG output to save CPU time
-			store.gameHistory = bestHistory;
-			store.gameEnded = true;
-
-			const svg = SVG.generateAnimatedSVG(store);
-			store.config.svgCallback(svg);
-			store.config.gameOverCallback();
-			return;
+			if (bestScore > previousBestScore) {
+				store.config.intelligence.dna = winnerDNA;
+				store.config.intelligence.lastScore = bestScore;
+			}
 		}
 	}
 
@@ -518,6 +522,7 @@ const checkCollisions = (store: StoreType) => {
 				else ghost.target = { x: 26, y: 4 }; // Blinky and Inky
 
 				store.pacman.points += 10;
+				store.pacman.ghostsEaten = (store.pacman.ghostsEaten || 0) + 1;
 				store.pacman.pauseRemainingDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;
 				ghost.deathPauseDuration = PACMAN_EAT_GHOST_PAUSE_DURATION;
 			} else {
